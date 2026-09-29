@@ -1,0 +1,186 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000000"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="ChatApp"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <title>Verify Code — ChatApp</title>
+  <meta name="description" content="Enter the 6-digit verification code sent to your phone."/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="page-shell">
+  <div class="card">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/>
+        </svg>
+      </div>
+      <h1>ChatApp</h1>
+      <p>Verify your identity</p>
+    </div>
+
+    <!-- Step indicator -->
+    <div class="step-indicator" aria-label="Step 2 of 2">
+      <div class="step-dot done" id="dot1"></div>
+      <div class="step-dot active" id="dot2"></div>
+    </div>
+
+    <!-- Back -->
+    <button class="back-btn" id="backBtn" aria-label="Go back to phone entry">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 5l-5 5 5 5"/>
+      </svg>
+      Change number
+    </button>
+
+    <div class="section-title">Check your messages</div>
+    <p class="section-sub" id="otpSubText">Enter the 6-digit code sent to your phone.</p>
+
+    <!-- OTP Boxes -->
+    <div class="otp-row" id="otpRow" aria-label="One-time password input">
+      <input class="otp-box" id="otp0" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" aria-label="Digit 1"/>
+      <input class="otp-box" id="otp1" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2"/>
+      <input class="otp-box" id="otp2" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3"/>
+      <input class="otp-box" id="otp3" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4"/>
+      <input class="otp-box" id="otp4" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5"/>
+      <input class="otp-box" id="otp5" type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6"/>
+    </div>
+    <div class="field-msg" id="otpMsg" role="alert" aria-live="assertive"></div>
+
+    <div style="margin-top: 24px;">
+      <button class="btn-primary" id="verifyBtn" disabled>
+        <span class="btn-text">Verify & Sign In</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- Resend -->
+    <div class="resend-row" aria-live="polite">
+      Didn't receive it?
+      <button class="resend-btn" id="resendBtn" disabled>Resend in <span id="timerDisplay">60s</span></button>
+    </div>
+
+    <div class="card-footer">
+      Having trouble? <a href="index.html">Use a different method</a>
+    </div>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+  // Guard: must have come from step 1
+  if (!Session.get('session_id')) window.location.href = 'index.html';
+  if (Session.isLoggedIn()) window.location.href = 'chat.html';
+
+  // Show masked phone
+  const phone = Session.get('phone') || '';
+  if (phone) {
+    const masked = phone.slice(0, -4).replace(/\d/g, '•') + phone.slice(-4);
+    document.getElementById('otpSubText').textContent = `Enter the 6-digit code sent to ${masked}`;
+  }
+
+  // Init OTP controller
+  const otp = initOtpInputs('#otpRow');
+
+  // Focus first box
+  document.getElementById('otp0').focus();
+
+  const verifyBtn = document.getElementById('verifyBtn');
+  const otpMsg = document.getElementById('otpMsg');
+
+  // Enable verify when all 6 filled
+  document.getElementById('otpRow').addEventListener('input', () => {
+    verifyBtn.disabled = !otp.isComplete();
+    setFieldState(null, otpMsg, '', '');
+  });
+
+  // -- Verify OTP --------------------------------------------
+  async function verify() {
+    const code = otp.getValue();
+    if (!otp.isComplete()) return;
+    setLoading(verifyBtn, true);
+    document.querySelectorAll('.otp-box').forEach(b => b.disabled = true);
+    try {
+      const result = await API.verifyOtp(Session.get('session_id'), code);
+      Session.set('access_token', result.access_token);
+      Session.set('user', result.user);
+      if (Session.get('remember_me')) {
+        // In a real app, refresh token would go in HttpOnly cookie via server
+        Session.persist();
+      }
+      showToast('Verified! Welcome to ChatApp \uD83C\uDF89', 'success', 2000);
+      setTimeout(() => window.location.href = 'chat.html', 1500);
+    } catch (err) {
+      showToast(err.message, 'error');
+      setFieldState(null, otpMsg, 'error', err.message);
+      otp.shake();
+      otp.clear();
+      setLoading(verifyBtn, false);
+      document.querySelectorAll('.otp-box').forEach(b => b.disabled = false);
+      document.getElementById('otp0').focus();
+    }
+  }
+
+  verifyBtn.addEventListener('click', verify);
+
+  // Also verify when last digit entered
+  document.getElementById('otpRow').addEventListener('input', () => {
+    if (otp.isComplete()) setTimeout(verify, 80);
+  });
+
+  // -- Resend Timer ----------------------------------------
+  const resendBtn = document.getElementById('resendBtn');
+  const timerDisplay = document.getElementById('timerDisplay');
+  let countdown = 60;
+
+  const timer = setInterval(() => {
+    countdown--;
+    timerDisplay.textContent = countdown + 's';
+    if (countdown <= 0) {
+      clearInterval(timer);
+      resendBtn.disabled = false;
+      resendBtn.innerHTML = 'Resend code';
+    }
+  }, 1000);
+
+  resendBtn.addEventListener('click', async () => {
+    if (resendBtn.disabled) return;
+    resendBtn.disabled = true;
+    const phone = Session.get('phone');
+    try {
+      const result = await API.requestOtp(phone, '');
+      Session.set('session_id', result.session_id);
+      otp.clear();
+      document.getElementById('otp0').focus();
+      showToast('A new code has been sent.', 'success');
+      countdown = 60;
+      timerDisplay.textContent = '60s';
+      resendBtn.innerHTML = 'Resend in <span id="timerDisplay">60s</span>';
+      // restart timer (simple approach: reload)
+    } catch(err) {
+      showToast(err.message, 'error');
+      resendBtn.disabled = false;
+    }
+  });
+
+  // -- Back Button -----------------------------------------
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = 'index.html';
+  });
+</script>
+</body>
+</html>

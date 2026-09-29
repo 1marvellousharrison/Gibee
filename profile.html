@@ -1,0 +1,840 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000000"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="ChatApp"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <title>Profile — Gibee</title>
+  <meta name="description" content="View a contact's profile and their shared chat media on Gibee."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    :root {
+      --motion-smooth: 200ms cubic-bezier(.25,.1,.25,1);
+      --motion-spring: 420ms cubic-bezier(.2,.8,.2,1);
+      --motion-bounce: 360ms cubic-bezier(.22,1.45,.36,1);
+    }
+
+    body { background: var(--bg-black); overflow: hidden; }
+
+    @keyframes pageFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes popIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+
+    /* ── Layout: profile info left, shared media primarily on the right ── */
+    .profile-shell {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      overflow: hidden;
+      animation: pageFade var(--motion-spring) both;
+    }
+
+    .profile-info {
+      background: var(--bg-card);
+      border-right: 1px solid rgba(196,181,253,.1);
+      overflow-y: auto;
+      padding: 26px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: var(--neu-shadow);
+    }
+    .profile-info::-webkit-scrollbar,
+    .profile-media::-webkit-scrollbar { width: 5px; }
+    .profile-info::-webkit-scrollbar-thumb,
+    .profile-media::-webkit-scrollbar-thumb { background: rgba(196,181,253,.15); border-radius: 3px; }
+
+    .profile-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 12px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(196,181,253,.08);
+    }
+    .profile-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 800;
+      position: relative;
+      box-shadow: 0 12px 32px rgba(0,0,0,.45);
+    }
+    .profile-avatar.online::after {
+      content: '';
+      position: absolute;
+      bottom: 6px; right: 6px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--success-green);
+      border: 3px solid var(--bg-card);
+      animation: popIn var(--motion-bounce) both;
+    }
+    .profile-name { font-size: 1.25rem; font-weight: 800; color: var(--soft-light); }
+    .profile-handle { font-size: .82rem; color: var(--light-purple); }
+    .profile-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .76rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(52,211,153,.12);
+      color: var(--success-green);
+      border: 1px solid rgba(52,211,153,.28);
+    }
+    .profile-status.offline {
+      background: rgba(196,181,253,.08);
+      color: rgba(196,181,253,.6);
+      border-color: rgba(196,181,253,.16);
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      background: none;
+      border: none;
+      color: var(--light-purple);
+      font: inherit;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+    }
+    .back-link:hover { color: var(--soft-light); }
+    .back-link svg { width: 16px; height: 16px; }
+
+    .profile-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 4px;
+      border-radius: 16px;
+      border: none;
+      background: var(--bg-surface);
+      color: var(--light-purple);
+      font: inherit;
+      font-size: .68rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--neu-tile);
+      transition: background var(--motion-smooth), color var(--motion-smooth), transform var(--motion-smooth), box-shadow var(--motion-smooth);
+    }
+    .action-btn svg { width: 18px; height: 18px; }
+    .action-btn:hover { background: var(--primary-purple); color: #fff; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(124,58,237,.4); }
+    .action-btn:active { transform: scale(.96); box-shadow: var(--neu-inset); }
+
+    .info-card {
+      background: var(--bg-surface);
+      border: none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      box-shadow: var(--neu-tile);
+    }
+    .info-card h3 {
+      font-size: .72rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--light-purple);
+      margin-bottom: 8px;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: .82rem;
+      color: rgba(196,181,253,.62);
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(196,181,253,.06);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row strong { color: var(--soft-light); font-weight: 700; text-align: right; }
+    .profile-bio { font-size: .85rem; line-height: 1.55; color: rgba(196,181,253,.7); }
+
+    /* ── Shared media (right / main) ── */
+    .profile-media {
+      overflow-y: auto;
+      padding: 24px 28px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-width: 0;
+    }
+    .media-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .media-title { font-size: 1.15rem; font-weight: 800; color: var(--soft-light); }
+    .media-sub { font-size: .78rem; color: rgba(196,181,253,.5); margin-top: 3px; }
+
+    .media-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .media-tabs::-webkit-scrollbar { height: 0; }
+    .m-tab {
+      flex: 0 0 auto;
+      padding: 7px 16px;
+      border-radius: 20px;
+      border: none;
+      background: var(--bg-surface);
+      color: rgba(196,181,253,.65);
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--neu-tile);
+      transition: all var(--motion-smooth);
+    }
+    .m-tab.active { background: var(--primary-purple); color: #fff; box-shadow: 0 6px 16px rgba(124,58,237,.4); }
+    .m-tab:hover:not(.active) { color: var(--soft-light); }
+
+    .media-panel { display: none; }
+    .media-panel.active { display: block; animation: pageFade var(--motion-smooth) both; }
+
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+      gap: 10px;
+    }
+    .media-tile {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 16px;
+      border: 1px solid rgba(196,181,253,.1);
+      cursor: pointer;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+      box-shadow: var(--neu-tile);
+      transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
+    }
+    .media-tile:hover { transform: translateY(-3px) scale(1.02); box-shadow: var(--neu-shadow); }
+    .media-tile .tile-tag {
+      font-size: .66rem;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(0,0,0,.42);
+      border-radius: 6px;
+      padding: 3px 7px;
+      backdrop-filter: blur(4px);
+    }
+    .media-tile .tile-play {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      opacity: .92;
+    }
+    .media-tile .tile-play svg { width: 30px; height: 30px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.5)); }
+
+    .media-list { display: flex; flex-direction: column; gap: 8px; }
+    .media-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: none;
+      background: var(--bg-surface);
+      cursor: pointer;
+      box-shadow: var(--neu-tile);
+      transition: background var(--motion-smooth), transform var(--motion-smooth), box-shadow var(--motion-smooth);
+    }
+    .media-item:hover { background: var(--overlay); transform: translateX(4px); box-shadow: var(--neu-shadow); }
+    .media-item .mi-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(124,58,237,.18);
+      color: var(--light-purple);
+    }
+    .media-item .mi-icon svg { width: 20px; height: 20px; }
+    .media-item .mi-body { flex: 1; min-width: 0; }
+    .media-item .mi-name { font-size: .85rem; font-weight: 600; color: var(--soft-light); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .media-item .mi-meta { font-size: .72rem; color: rgba(196,181,253,.5); margin-top: 2px; }
+
+    .empty-state {
+      padding: 48px 20px;
+      text-align: center;
+      color: rgba(196,181,253,.4);
+      font-size: .85rem;
+      border: 1px dashed rgba(196,181,253,.14);
+      border-radius: 14px;
+    }
+
+    /* Mobile tab switcher (Profile / Media) */
+    .mobile-switch {
+      display: none;
+      gap: 6px;
+      padding: 10px 14px;
+      background: var(--bg-black);
+      border-bottom: 1px solid rgba(196,181,253,.08);
+      flex-shrink: 0;
+    }
+    .mobile-switch button {
+      flex: 1;
+      padding: 9px;
+      border-radius: 999px;
+      border: none;
+      background: var(--bg-surface);
+      color: rgba(196,181,253,.7);
+      font: inherit;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mobile-switch button.active { background: var(--primary-purple); border-color: var(--primary-purple); color: #fff; }
+
+    /* Settings popover */
+    .settings-panel {
+      position: fixed;
+      top: 86px; left: 86px;
+      width: 260px;
+      z-index: 80;
+      display: none;
+      background: var(--bg-surface);
+      border: 1px solid rgba(196,181,253,.16);
+      border-radius: 18px;
+      box-shadow: var(--neu-shadow);
+      padding: 14px;
+      animation: pageFade var(--motion-smooth) both;
+    }
+    .settings-panel.open { display: block; }
+    .settings-title { color: var(--soft-light); font-size: .86rem; font-weight: 800; margin-bottom: 12px; }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; color: var(--light-purple); font-size: .82rem;
+    }
+    .theme-switch { position: relative; width: 48px; height: 26px; flex: 0 0 auto; }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .theme-switch span {
+      position: absolute; inset: 0; cursor: pointer; border-radius: 999px;
+      background: var(--overlay); border: 1px solid rgba(196,181,253,.2);
+      transition: background var(--motion-smooth), border-color var(--motion-smooth);
+    }
+    .theme-switch span::before {
+      content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px;
+      border-radius: 50%; background: var(--light-purple);
+      transition: transform var(--motion-spring), background var(--motion-smooth);
+    }
+    .theme-switch input:checked + span { background: var(--primary-purple); border-color: var(--primary-purple); }
+    .theme-switch input:checked + span::before { transform: translateX(22px); background: #fff; }
+
+    /* Light theme */
+    [data-theme="light"] .profile-info,
+    [data-theme="light"] .settings-panel { background: var(--bg-surface); border-color: rgba(91,33,182,.14); }
+    [data-theme="light"] .info-card,
+    [data-theme="light"] .media-item { background: var(--bg-surface); border-color: rgba(91,33,182,.14); }
+    [data-theme="light"] .m-tab,
+    [data-theme="light"] .action-btn { background: var(--bg-surface); border-color: rgba(91,33,182,.14); color: var(--light-purple); }
+    [data-theme="light"] .m-tab.active,
+    [data-theme="light"] .action-btn:hover { background: var(--primary-purple); color: #fff; }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(6px);
+    }
+    .lightbox.open { display: flex; animation: pageFade var(--motion-smooth) both; }
+    .lightbox-inner {
+      width: min(560px, 100%);
+      aspect-ratio: 4 / 3;
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.05rem;
+      box-shadow: 0 24px 60px rgba(0,0,0,.6);
+      position: relative;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -46px; right: 0;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.8rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .profile-shell { grid-template-columns: 300px minmax(0, 1fr); }
+      .profile-media { padding: 20px 20px 36px; }
+    }
+
+    @media (max-width: 768px) {
+      .app-topbar { display: flex; }
+      .bottom-nav { display: flex; }
+      .back-link { display: none; }
+      .profile-shell { grid-template-columns: 1fr; }
+      .profile-info { border-right: none; padding: 20px 16px 28px; }
+      .profile-media { padding: 18px 14px 36px; }
+      .mobile-switch { display: flex; }
+      .profile-info[data-panel-hidden],
+      .profile-media[data-panel-hidden] { display: none; }
+      .media-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+      .settings-panel { left: 12px; right: 12px; top: auto; bottom: 88px; width: auto; }
+    }
+
+    @media (max-width: 380px) {
+      .media-grid { grid-template-columns: repeat(3, 1fr); }
+      .profile-actions { grid-template-columns: repeat(4, 1fr); }
+      .action-btn { font-size: .62rem; padding: 10px 2px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="app-frame">
+
+  <!-- Mobile top bar -->
+  <div class="app-topbar">
+    <button class="icon-btn" id="backBtn" aria-label="Back to chats">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+    </button>
+    <div class="app-topbar-title" id="topbarTitle">Profile<span class="app-topbar-sub" id="topbarSub">Contact info</span></div>
+    <button class="icon-btn" id="topbarMsgBtn" aria-label="Message">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    </button>
+    <button class="icon-btn" id="topbarSettingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+    </button>
+  </div>
+
+  <!-- Mobile Profile / Media switcher -->
+  <div class="mobile-switch" id="mobileSwitch">
+    <button type="button" data-panel="info" class="active">Profile</button>
+    <button type="button" data-panel="media">Shared media</button>
+  </div>
+
+  <div class="profile-shell" id="profileShell">
+
+    <!-- Left: contact profile -->
+    <aside class="profile-info" id="profileInfo" aria-label="Contact profile"></aside>
+
+    <!-- Right (primary): shared chat media -->
+    <section class="profile-media" id="profileMedia" aria-label="Shared media"></section>
+  </div>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
+    <button class="nav-item" data-nav="chats" aria-label="Chats">
+      <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      <span>Chats</span>
+    </button>
+    <button class="nav-item" data-nav="status" aria-label="Status">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+      <span>Status</span>
+    </button>
+    <button class="nav-item" data-nav="calls" aria-label="Calls">
+      <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.58 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.4 11.4 0 00.58 3.6 1 1 0 01-.25 1z"/></svg>
+      <span>Calls</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Settings popover -->
+<section class="settings-panel" id="settingsPanel" aria-label="Settings">
+  <div class="settings-title">Settings</div>
+  <label class="settings-row" for="themeSwitch">
+    <span>Light mode</span>
+    <span class="theme-switch">
+      <input type="checkbox" id="themeSwitch"/>
+      <span aria-hidden="true"></span>
+    </span>
+  </label>
+  <button type="button" id="settingsLogoutBtn" style="width:100%;margin-top:14px;height:40px;border-radius:10px;border:1px solid rgba(196,181,253,.18);background:var(--overlay);color:var(--light-purple);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer">Sign out</button>
+</section>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Media preview">
+  <div class="lightbox-inner" id="lightboxInner">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close preview">&times;</button>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+  if (!Session.isLoggedIn()) window.location.href = 'index.html';
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  // ── Conversation / contact directory (mirrors chat.html) ──
+  const CONVS = [
+    { id: 1, name: 'Alex Rivera', initials: 'AR', color: '#7C3AED', online: true,  members: 2, username: '@alexrivera',  phone: '+1 415 555 0132', joined: 'Jan 2023', bio: 'Product designer. Coffee first, pixels second. Always up for a good conversation.' },
+    { id: 2, name: 'Jordan Lee',  initials: 'JL', color: '#2563EB', online: true,  members: 2, username: '@jordanlee',   phone: '+1 415 555 0177', joined: 'Mar 2023', bio: 'Frontend engineer working on design systems and accessibility.' },
+    { id: 3, name: 'Team Alpha',  initials: 'TA', color: '#059669', online: false, members: 8, username: '@team-alpha',  phone: '—',                joined: 'Nov 2022', bio: 'Group chat for the Alpha squad. 8 members. Ship fast, communicate faster.' },
+    { id: 4, name: 'Maria Santos', initials: 'MS', color: '#DB2777', online: false, members: 2, username: '@mariasantos', phone: '+351 91 555 0098', joined: 'Feb 2023', bio: 'Photographer & traveller. Sharing the world one frame at a time.' },
+    { id: 5, name: 'Dev Chat',    initials: 'DC', color: '#D97706', online: false, members: 5, username: '@dev-chat',    phone: '—',                joined: 'Sep 2022', bio: 'Developers lounge. PRs, hotfixes and the occasional meme.' },
+    { id: 6, name: 'Chris Park',  initials: 'CP', color: '#7C3AED', online: false, members: 2, username: '@chrispark',   phone: '+82 10 5555 0143', joined: 'Jun 2023', bio: 'Backend dev. Thanks for the help earlier!' }
+  ];
+
+  const GRADIENTS = [
+    'linear-gradient(135deg,#7C3AED,#2563EB)',
+    'linear-gradient(135deg,#DB2777,#7C3AED)',
+    'linear-gradient(135deg,#059669,#34D399)',
+    'linear-gradient(135deg,#D97706,#FBBF24)',
+    'linear-gradient(135deg,#2563EB,#22D3EE)',
+    'linear-gradient(135deg,#7C3AED,#EC4899)',
+    'linear-gradient(135deg,#4F46E5,#7C3AED)',
+    'linear-gradient(135deg,#0891B2,#34D399)',
+    'linear-gradient(135deg,#9333EA,#F43F5E)',
+    'linear-gradient(135deg,#6D28D9,#4338CA)',
+    'linear-gradient(135deg,#0EA5E9,#6366F1)',
+    'linear-gradient(135deg,#F59E0B,#EF4444)'
+  ];
+
+  function buildMedia(id) {
+    const seed = Number(id) || 1;
+    const photos = Array.from({ length: 9 }, (_, i) => ({
+      grad: GRADIENTS[(seed + i) % GRADIENTS.length],
+      label: `IMG_${String(1200 + seed * 7 + i)}.jpg`
+    }));
+    const videos = Array.from({ length: 4 }, (_, i) => ({
+      grad: GRADIENTS[(seed + i + 4) % GRADIENTS.length],
+      label: `Clip_${i + 1}.mp4`,
+      duration: `0:${String(20 + i * 13).padStart(2, '0')}`
+    }));
+    const files = [
+      { name: 'Project_Brief.pdf', size: '2.4 MB', meta: 'PDF document' },
+      { name: 'Budget_2026.xlsx',  size: '486 KB', meta: 'Spreadsheet' },
+      { name: 'Wireframes.zip',    size: '12.1 MB', meta: 'Archive' },
+      { name: 'Notes.txt',         size: '4 KB',   meta: 'Text file' }
+    ];
+    const links = [
+      { name: 'figma.com/file/design-system', meta: 'figma.com' },
+      { name: 'developer.mozilla.org/Web_API', meta: 'mozilla.org' },
+      { name: 'github.com/org/repo/pull/482', meta: 'github.com' }
+    ];
+    const audio = [
+      { name: 'Voice note',     meta: '0:24', grad: GRADIENTS[seed % GRADIENTS.length] },
+      { name: 'Standup recap',  meta: '1:38', grad: GRADIENTS[(seed + 3) % GRADIENTS.length] },
+      { name: 'Song share',     meta: '3:12', grad: GRADIENTS[(seed + 6) % GRADIENTS.length] }
+    ];
+    return { photos, videos, files, links, audio };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const id = Number(params.get('id')) || 1;
+  const startTab = params.get('tab');
+  const conv = CONVS.find(c => c.id === id) || CONVS[0];
+  const media = buildMedia(conv.id);
+
+  document.title = `${conv.name} — Profile — ChatApp`;
+  document.getElementById('topbarTitle').innerHTML =
+    `${escapeHtml(conv.name)}<span class="app-topbar-sub">${conv.online ? 'Online' : 'Offline'}</span>`;
+
+  // ── Render profile info (left) ────────────────────────────
+  const profileInfo = document.getElementById('profileInfo');
+  profileInfo.innerHTML = `
+    <button class="back-link" type="button" data-action="back" aria-label="Back to chat">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+      Back to chat
+    </button>
+    <div class="profile-hero">
+      <div class="profile-avatar${conv.online ? ' online' : ''}" style="background:${conv.color}22;color:${conv.color};border:2px solid ${conv.color}66">
+        ${escapeHtml(conv.initials)}
+      </div>
+      <div>
+        <div class="profile-name">${escapeHtml(conv.name)}</div>
+        <div class="profile-handle">${escapeHtml(conv.username)}</div>
+      </div>
+      <span class="profile-status${conv.online ? '' : ' offline'}">
+        ${conv.online ? 'Online now' : 'Last seen recently'}
+      </span>
+    </div>
+
+    <div class="profile-actions">
+      <button class="action-btn" data-action="message">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+        Message
+      </button>
+      <button class="action-btn" data-action="call">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.36 1.9.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Call
+      </button>
+      <button class="action-btn" data-action="video">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Video
+      </button>
+      <button class="action-btn" data-action="mute">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-9.33-5M6 8a6 6 0 009.33 5"/><path d="M12 18v4M8 22h8"/></svg>
+        Mute
+      </button>
+    </div>
+
+    <div class="info-card">
+      <h3>About</h3>
+      <p class="profile-bio">${escapeHtml(conv.bio)}</p>
+    </div>
+
+    <div class="info-card">
+      <h3>Details</h3>
+      <div class="info-row"><span>Username</span><strong>${escapeHtml(conv.username)}</strong></div>
+      <div class="info-row"><span>Phone</span><strong>${escapeHtml(conv.phone)}</strong></div>
+      <div class="info-row"><span>Members</span><strong>${conv.members}</strong></div>
+      <div class="info-row"><span>Joined</span><strong>${escapeHtml(conv.joined)}</strong></div>
+      <div class="info-row"><span>Encryption</span><strong>E2EE ready</strong></div>
+    </div>
+  `;
+
+  // ── Render shared media (right / primary) ─────────────────
+  const profileMedia = document.getElementById('profileMedia');
+  const total = media.photos.length + media.videos.length + media.files.length + media.links.length + media.audio.length;
+
+  profileMedia.innerHTML = `
+    <div class="media-head">
+      <div>
+        <div class="media-title">Shared media</div>
+        <div class="media-sub">${total} items shared with ${escapeHtml(conv.name)}</div>
+      </div>
+    </div>
+
+    <div class="media-tabs" id="mediaTabs">
+      <button class="m-tab active" data-tab="photos">Photos ${media.photos.length}</button>
+      <button class="m-tab" data-tab="videos">Videos ${media.videos.length}</button>
+      <button class="m-tab" data-tab="files">Files ${media.files.length}</button>
+      <button class="m-tab" data-tab="links">Links ${media.links.length}</button>
+      <button class="m-tab" data-tab="audio">Audio ${media.audio.length}</button>
+    </div>
+
+    <div class="media-panel active" data-panel="photos">
+      <div class="media-grid">
+        ${media.photos.map((p, i) => `
+          <div class="media-tile" data-photo="${i}" style="background:${p.grad}">
+            <span class="tile-tag">${escapeHtml(p.label)}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="media-panel" data-panel="videos">
+      <div class="media-grid">
+        ${media.videos.map((v, i) => `
+          <div class="media-tile" data-video="${i}" style="background:${v.grad}">
+            <span class="tile-play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+            <span class="tile-tag">${escapeHtml(v.duration)}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="media-panel" data-panel="files">
+      <div class="media-list">
+        ${media.files.map(f => `
+          <div class="media-item">
+            <div class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div>
+            <div class="mi-body"><div class="mi-name">${escapeHtml(f.name)}</div><div class="mi-meta">${escapeHtml(f.meta)} · ${escapeHtml(f.size)}</div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="media-panel" data-panel="links">
+      <div class="media-list">
+        ${media.links.map(l => `
+          <div class="media-item">
+            <div class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
+            <div class="mi-body"><div class="mi-name">${escapeHtml(l.name)}</div><div class="mi-meta">${escapeHtml(l.meta)}</div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="media-panel" data-panel="audio">
+      <div class="media-list">
+        ${media.audio.map(a => `
+          <div class="media-item">
+            <div class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+            <div class="mi-body"><div class="mi-name">${escapeHtml(a.name)}</div><div class="mi-meta">${escapeHtml(a.meta)}</div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+  `;
+
+  // ── Media tabs ────────────────────────────────────────────
+  document.getElementById('mediaTabs').addEventListener('click', event => {
+    const btn = event.target.closest('.m-tab');
+    if (!btn) return;
+    document.querySelectorAll('.m-tab').forEach(t => t.classList.toggle('active', t === btn));
+    document.querySelectorAll('.media-panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.panel === btn.dataset.tab);
+    });
+  });
+
+  // ── Lightbox for photos & videos ──────────────────────────
+  const lightbox = document.getElementById('lightbox');
+  const lightboxInner = document.getElementById('lightboxInner');
+  const lightboxClose = document.getElementById('lightboxClose');
+
+  function openLightbox(grad, label) {
+    lightboxInner.style.background = grad;
+    lightboxInner.querySelector('.lb-label')?.remove();
+    const span = document.createElement('span');
+    span.className = 'lb-label';
+    span.textContent = label;
+    lightboxInner.appendChild(span);
+    lightbox.classList.add('open');
+  }
+  function closeLightbox() { lightbox.classList.remove('open'); }
+
+  document.getElementById('profileMedia').addEventListener('click', event => {
+    const photo = event.target.closest('[data-photo]');
+    const video = event.target.closest('[data-video]');
+    if (photo) {
+      const p = media.photos[+photo.dataset.photo];
+      openLightbox(p.grad, p.label);
+    } else if (video) {
+      const v = media.videos[+video.dataset.video];
+      openLightbox(v.grad, `${v.label} · ${v.duration}`);
+    }
+  });
+  lightboxClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', event => { if (event.target === lightbox) closeLightbox(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeLightbox(); });
+
+  // ── Action buttons ────────────────────────────────────────
+  profileInfo.addEventListener('click', event => {
+    const btn = event.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'message') {
+      window.location.href = 'chat.html';
+    } else if (action === 'back') {
+      window.location.href = 'chat.html';
+    } else if (action === 'call') {
+      showToast(`Calling ${conv.name}…`, 'info', 2200);
+    } else if (action === 'video') {
+      showToast(`Starting video call with ${conv.name}…`, 'info', 2200);
+    } else if (action === 'mute') {
+      showToast(`Notifications muted for ${conv.name}.`, 'success', 2200);
+    }
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => window.location.href = 'chat.html');
+  document.getElementById('topbarMsgBtn').addEventListener('click', () => window.location.href = 'chat.html');
+
+  // ── Mobile Profile / Media switcher ───────────────────────
+  const mobileSwitch = document.getElementById('mobileSwitch');
+  const profileShell = document.getElementById('profileShell');
+
+  function setMobilePanel(panel) {
+    mobileSwitch.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.panel === panel));
+    profileInfo.toggleAttribute('data-panel-hidden', panel !== 'info');
+    profileMedia.toggleAttribute('data-panel-hidden', panel !== 'media');
+  }
+
+  mobileSwitch.addEventListener('click', event => {
+    const btn = event.target.closest('button');
+    if (btn) setMobilePanel(btn.dataset.panel);
+  });
+
+  // ── Bottom navigation ─────────────────────────────────────
+  const bottomNav = document.getElementById('bottomNav');
+  const settingsPanel = document.getElementById('settingsPanel');
+  const themeSwitch = document.getElementById('themeSwitch');
+
+  function syncThemeSwitch() { if (themeSwitch) themeSwitch.checked = Theme.get() === 'light'; }
+  syncThemeSwitch();
+
+  themeSwitch?.addEventListener('change', () => {
+    Theme.set(themeSwitch.checked ? 'light' : 'dark');
+    syncThemeSwitch();
+  });
+
+  function toggleSettingsPanel() {
+    const isOpen = settingsPanel.classList.toggle('open');
+    document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', String(isOpen));
+  }
+
+  document.getElementById('topbarSettingsBtn').addEventListener('click', event => {
+    event.stopPropagation();
+    toggleSettingsPanel();
+  });
+
+  bottomNav.addEventListener('click', event => {
+    const item = event.target.closest('.nav-item');
+    if (!item) return;
+    const nav = item.dataset.nav;
+    if (nav === 'chats') {
+      window.location.href = 'chat.html';
+    } else {
+      bottomNav.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === 'chats'));
+      settingsPanel.classList.remove('open');
+      document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', 'false');
+      const labels = { status: 'Status updates', calls: 'Calls' };
+      showToast(`${labels[nav] || nav} — coming soon.`, 'info', 2000);
+    }
+  });
+
+  document.addEventListener('click', event => {
+    if (!settingsPanel.classList.contains('open')) return;
+    if (settingsPanel.contains(event.target)) return;
+    if (event.target.closest('#topbarSettingsBtn')) return;
+    settingsPanel.classList.remove('open');
+    document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', 'false');
+  });
+
+  document.getElementById('settingsLogoutBtn').addEventListener('click', () => {
+    Session.clear();
+    localStorage.removeItem('chat_remember');
+    window.location.href = 'index.html';
+  });
+
+  // ── Initial panel based on URL ────────────────────────────
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    setMobilePanel(startTab === 'media' ? 'media' : 'info');
+  }
+</script>
+</body>
+</html>

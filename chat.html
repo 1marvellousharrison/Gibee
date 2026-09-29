@@ -1,0 +1,2104 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000000"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Gibee"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <title>Gibee — Messages</title>
+  <meta name="description" content="Your Gibee messages. Start chatting now."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* -- Chat Shell --------------------------- */
+    body { background: var(--bg-black); overflow: hidden; }
+
+    :root {
+      --motion-smooth: 200ms cubic-bezier(.25,.1,.25,1);
+      --motion-spring: 420ms cubic-bezier(.2,.8,.2,1);
+      --motion-bounce: 360ms cubic-bezier(.22,1.45,.36,1);
+    }
+
+    .chat-shell {
+      display: grid;
+      grid-template-columns: 72px 320px minmax(0, 1fr) 300px;
+      flex: 1;
+      min-height: 0;
+      background: var(--bg-black);
+      animation: pageFade var(--motion-spring) both;
+    }
+
+    .chat-main-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Clickable chat header profile (opens the user profile page) */
+    .chat-header-profile {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+      background: none;
+      border: none;
+      padding: 4px;
+      margin: -4px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: left;
+      font-family: inherit;
+      color: inherit;
+      transition: background var(--motion-smooth);
+    }
+    .chat-header-profile:hover { background: var(--overlay); }
+    .chat-header-profile:focus-visible { outline: 2px solid var(--primary-purple); outline-offset: 2px; }
+    .chat-header-profile .chat-header-info { flex: 1; min-width: 0; }
+
+    .header-back { display: none; flex-shrink: 0; }
+
+    @keyframes pageFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes messagePop {
+      0% { opacity: 0; transform: translateY(12px) scale(.92); }
+      70% { opacity: 1; transform: translateY(-1px) scale(1.015); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes badgePop {
+      0% { opacity: 0; transform: scale(0); }
+      72% { opacity: 1; transform: scale(1.16); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes typingWave {
+      from { transform: translateY(0); opacity: .55; }
+      to { transform: translateY(-60%); opacity: 1; }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 4px 12px rgba(124,58,237,.4); }
+      50% { box-shadow: 0 8px 24px rgba(168,85,247,.72); }
+    }
+
+    .nav-rail {
+      background: #0a0315;
+      border-right: 1px solid rgba(196,181,253,.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 10px;
+      gap: 14px;
+    }
+
+    .rail-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(124,58,237,.35);
+    }
+    .rail-logo svg { width: 22px; height: 22px; fill: #fff; }
+
+    .rail-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      align-items: center;
+    }
+
+    .rail-spacer { flex: 1; }
+
+    .rail-profile {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(196,181,253,.25);
+      background: rgba(124,58,237,.16);
+      color: var(--soft-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .8rem;
+      font-weight: 800;
+    }
+
+    /* -- Sidebar ------------------------------ */
+    .sidebar {
+      background: var(--bg-card);
+      border-right: 1px solid rgba(196,181,253,.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(196,181,253,.08);
+      flex-shrink: 0;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--soft-light);
+    }
+
+    .sidebar-brand .icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-brand .icon svg { width: 18px; height: 18px; fill: #fff; }
+
+    .sidebar-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--overlay); border: 1px solid rgba(196,181,253,.12);
+      color: var(--light-purple); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--motion-smooth), color var(--motion-smooth), transform var(--motion-smooth), box-shadow var(--motion-smooth);
+    }
+    .icon-btn:hover { background: var(--primary-purple); color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,58,237,.28); }
+    .icon-btn:active { transform: scale(.96); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+/* Search */
+    .sidebar-search {
+      padding: 10px 16px 8px;
+      flex-shrink: 0;
+    }
+    .sidebar-search input {
+      width: 100%; height: 48px;
+      background: var(--bg-surface);
+      border: none;
+      border-radius: 16px;
+      color: var(--soft-light);
+      font-size: 0.9rem; font-family: inherit;
+      padding: 0 16px; outline: none;
+      box-shadow: var(--neu-inset);
+    }
+    .sidebar-search input::placeholder { color: rgba(196,181,253,.5); }
+    .sidebar-search input:focus { box-shadow: var(--neu-inset), 0 0 0 2px rgba(124,58,237,.3); }
+
+    /* Tabs */
+    .sidebar-tabs {
+      display: flex;
+      padding: 0 16px 12px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .s-tab {
+      padding: 6px 14px; border-radius: 20px; border: none;
+      background: transparent; color: rgba(196,181,253,.55);
+      font-size: 0.79rem; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: all 0.18s;
+    }
+    .s-tab.active { background: var(--primary-purple); color: #fff; }
+    .s-tab:hover:not(.active) { background: var(--overlay); color: var(--soft-light); }
+
+/* Conversation List */
+    .conv-list { overflow-y: auto; flex: 1; padding: 6px 0 12px; }
+    .conv-list::-webkit-scrollbar { width: 4px; }
+    .conv-list::-webkit-scrollbar-thumb { background: rgba(196,181,253,.15); border-radius: 2px; }
+
+    .conv-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 12px 9px;
+      padding: 12px 14px;
+      cursor: pointer;
+      background: var(--bg-surface);
+      border-radius: 16px;
+      box-shadow: var(--neu-tile);
+      transition: background var(--motion-smooth), transform var(--motion-smooth), box-shadow var(--motion-smooth);
+    }
+    .conv-item:hover, .conv-item:focus-visible { background: var(--overlay); transform: translateY(-2px); box-shadow: var(--neu-shadow); outline: none; }
+    .conv-item.active { background: rgba(124,58,237,.16); box-shadow: inset 0 0 0 2px rgba(124,58,237,.35), var(--neu-tile); }
+    .conv-item:active { transform: scale(.98); }
+
+    .avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 700; flex-shrink: 0;
+      position: relative;
+      box-shadow: 0 4px 12px rgba(0,0,0,.35);
+    }
+    .avatar.online::after {
+      content: ''; position: absolute; bottom: 1px; right: 1px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--success-green); border: 2px solid var(--bg-card);
+      animation: badgePop var(--motion-bounce) both;
+    }
+
+.conv-info { flex: 1; min-width: 0; }
+    .conv-name { font-size: 15px; font-weight: 600; color: var(--soft-light); margin-bottom: 3px; }
+    .conv-preview { font-size: 13px; color: rgba(196,181,253,.55); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+    .conv-time { font-size: 11px; color: rgba(196,181,253,.4); }
+    .conv-badge {
+      min-width: 20px; height: 20px; border-radius: 999px; background: var(--primary-purple); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+      padding: 0 6px;
+      box-shadow: 0 4px 12px rgba(124,58,237,.45);
+      animation: badgePop var(--motion-bounce) both;
+    }
+
+    /* -- App brand: "Gibee" wordmark in the top-left ----- */
+    .app-brand {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .app-brand-mark {
+      width: 34px; height: 34px;
+      border-radius: 11px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      box-shadow: 0 6px 16px rgba(124,58,237,.42);
+    }
+    .app-brand-mark svg { width: 19px; height: 19px; fill: #fff; }
+    .app-brand-name {
+      font-size: 1.32rem;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #E9D5FF 0%, #C4B5FD 30%, #A855F7 62%, #7C3AED 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-theme="light"] .app-brand-name { background-image: linear-gradient(135deg, #7C3AED, #5B21B6); }
+    [data-theme="light"] .app-brand-mark { box-shadow: 0 6px 16px rgba(91,33,182,.32); }
+
+    /* -- Overflow menu (three dots) ---------------------- */
+    .overflow-menu {
+      display: none;
+      position: absolute;
+      top: 70px;
+      right: 12px;
+      z-index: 90;
+      min-width: 216px;
+      padding: 6px;
+      background: var(--bg-card);
+      border: 1px solid rgba(196,181,253,.16);
+      border-radius: 18px;
+      box-shadow: 0 22px 50px rgba(0,0,0,.55);
+      animation: menuPop .18s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    .overflow-menu.open { display: block; }
+    @media (min-width: 769px) { .overflow-menu { display: none !important; } }
+    @keyframes menuPop { from { opacity: 0; transform: translateY(-8px) scale(.96); } to { opacity: 1; transform: none; } }
+    .overflow-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 13px;
+      background: none;
+      color: var(--light-purple);
+      font-family: inherit;
+      font-size: .88rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      transition: background var(--motion-fast);
+    }
+    .overflow-row:hover, .overflow-row:focus-visible { background: rgba(124,58,237,.14); outline: none; }
+    .overflow-row svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+    .overflow-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+    .overflow-meta { display: flex; flex-direction: column; min-width: 0; }
+    .overflow-meta strong {
+      font-size: .88rem;
+      font-weight: 700;
+      color: var(--soft-light);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .overflow-meta small { font-size: .72rem; font-weight: 600; color: var(--light-purple); opacity: .75; }
+    .overflow-sep { height: 1px; margin: 5px 8px; background: rgba(196,181,253,.14); }
+    [data-theme="light"] .overflow-row:hover { background: rgba(124,58,237,.1); }
+    [data-theme="light"] .overflow-menu { box-shadow: 0 22px 50px rgba(91,33,182,.18); border-color: rgba(91,33,182,.12); }
+    [data-theme="light"] .overflow-sep { background: rgba(91,33,182,.1); }
+
+    /* -- Archived button at the top of the chat list ----- */
+    .sidebar-archive { padding: 2px 12px 8px; }
+    .archive-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid rgba(196,181,253,.16);
+      border-radius: 999px;
+      background: var(--bg-surface);
+      color: var(--light-purple);
+      font-family: inherit;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--neu-tile);
+      transition: transform var(--motion-fast), background var(--motion-fast);
+    }
+    .archive-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .archive-btn:active { transform: scale(.96); }
+    .archive-count {
+      min-width: 19px; height: 19px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: rgba(124,58,237,.2);
+      color: var(--light-purple);
+      font-size: .68rem;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .archive-btn.active {
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      border-color: transparent;
+      color: #fff;
+    }
+    .archive-btn.active .archive-count { background: rgba(255,255,255,.25); color: #fff; }
+    [data-theme="light"] .archive-btn { border-color: rgba(91,33,182,.14); }
+    [data-theme="light"] .archive-count { background: rgba(124,58,237,.14); color: #5B21B6; }
+
+    .conv-empty {
+      margin: 30px 16px;
+      text-align: center;
+      color: rgba(196,181,253,.45);
+      font-size: .82rem;
+      line-height: 1.5;
+    }
+
+    /* New chat — hidden on desktop, the sidebar has its own action */
+    .fab-new-chat { display: none; }
+
+
+    /* -- Main Chat Area ------------------------ */
+    .chat-main {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-black);
+      position: relative;
+    }
+
+/* Chat header */
+    .chat-header {
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(196,181,253,.07);
+      background: var(--bg-surface);
+      box-shadow: 0 6px 18px rgba(0,0,0,.28);
+      flex-shrink: 0;
+    }
+    .chat-header .icon-btn,
+    .app-topbar .icon-btn {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      box-shadow: var(--neu-tile);
+      flex-shrink: 0;
+    }
+    .chat-header .avatar { width: 38px; height: 38px; font-size: .85rem; box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+
+    .chat-header-info { flex: 1; min-width: 0; }
+    .chat-header-name { font-size: 16px; font-weight: 700; color: var(--soft-light); }
+    .chat-header-status { font-size: 12px; color: var(--light-purple); margin-top: 2px; }
+    .chat-header-status.offline { color: rgba(196,181,253,.45); }
+
+/* Messages area */
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .messages-area::-webkit-scrollbar { width: 4px; }
+    .messages-area::-webkit-scrollbar-thumb { background: rgba(196,181,253,.1); border-radius: 2px; }
+
+    .msg-group { display: flex; flex-direction: column; gap: 4px; animation: messagePop var(--motion-spring) both; }
+    .msg-group.sent { align-items: flex-end; }
+    .msg-group.received { align-items: flex-start; }
+
+    .msg-bubble {
+      max-width: 72%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      column-gap: 8px;
+    }
+    .msg-bubble .bubble-text { white-space: pre-wrap; }
+
+    .msg-group.sent .msg-bubble {
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+
+    .msg-group.received .msg-bubble {
+      background: var(--bg-surface);
+      color: var(--soft-light);
+      border-bottom-left-radius: 6px;
+      box-shadow: var(--neu-tile);
+    }
+
+    .msg-time { font-size: 10px; font-weight: 600; }
+    .msg-group.sent .msg-time { color: rgba(255,255,255,.72); }
+    .msg-group.received .msg-time { color: rgba(196,181,253,.5); }
+    .msg-status { margin-left: 4px; color: var(--light-purple); }
+    .msg-status.failed { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+
+.typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 12px 16px;
+      border-radius: 18px;
+      border-bottom-left-radius: 6px;
+      background: var(--bg-surface);
+      box-shadow: var(--neu-tile);
+      animation: messagePop var(--motion-spring) both;
+    }
+    .typing-indicator span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary-purple);
+      box-shadow: 0 0 10px rgba(124,58,237,.6);
+      animation: typingWave .4s ease-in-out infinite alternate;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: .15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+
+    .system-notice {
+      align-self: center;
+      max-width: 78%;
+      padding: 8px 12px;
+      border: 1px solid rgba(196,181,253,.1);
+      border-radius: 999px;
+      background: rgba(30,27,75,.55);
+      color: rgba(196,181,253,.65);
+      font-size: .74rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+.date-separator {
+      align-self: center;
+      text-align: center;
+      font-size: 0.73rem;
+      color: rgba(196,181,253,.45);
+      padding: 2px 12px;
+      background: var(--bg-surface);
+      border-radius: 999px;
+      box-shadow: var(--neu-tile);
+    }
+
+    /* Input area */
+    .chat-input-area {
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(196,181,253,.07);
+      background: var(--bg-surface);
+      box-shadow: 0 -6px 18px rgba(0,0,0,.28);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .reply-preview {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 24px;
+      background: rgba(30,27,75,.75);
+      border-top: 1px solid rgba(196,181,253,.08);
+      color: var(--light-purple);
+      font-size: .8rem;
+    }
+    .reply-preview.active { display: flex; animation: pageFade var(--motion-smooth) both; }
+    .reply-preview strong { display: block; color: var(--soft-light); font-size: .78rem; margin-bottom: 2px; }
+    .reply-preview button { background: none; border: none; color: var(--light-purple); cursor: pointer; font-size: 1.1rem; }
+
+    .floating-picker {
+      position: absolute;
+      bottom: 72px;
+      left: 24px;
+      display: none;
+      width: min(280px, calc(100vw - 48px));
+      background: var(--bg-card);
+      border: 1px solid rgba(196,181,253,.16);
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0,0,0,.55);
+      padding: 10px;
+      z-index: 20;
+    }
+    .floating-picker.open { display: grid; gap: 8px; animation: pageFade var(--motion-smooth) both; }
+    .picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .picker-option {
+      height: 42px;
+      border-radius: 8px;
+      border: 1px solid rgba(196,181,253,.12);
+      background: var(--overlay);
+      color: var(--soft-light);
+      cursor: pointer;
+      font: inherit;
+      font-size: .8rem;
+    }
+    .picker-option:hover { border-color: var(--primary-purple); }
+
+.msg-input-wrap {
+      flex: 1;
+      background: var(--bg-surface);
+      border: none;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      padding: 6px 8px 6px 10px;
+      gap: 8px;
+      box-shadow: var(--neu-inset);
+      transition: box-shadow 0.18s;
+      min-width: 0;
+    }
+    .msg-input-wrap:focus-within { box-shadow: var(--neu-inset), 0 0 0 2px rgba(124,58,237,.3); }
+
+    .msg-input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--soft-light);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      resize: none;
+      max-height: 96px;
+      line-height: 1.5;
+      min-width: 0;
+    }
+    .msg-input::placeholder { color: rgba(196,181,253,.4); }
+
+    .attach-btn {
+      background: none; border: none; color: var(--light-purple);
+      cursor: pointer; display: flex; align-items: center; padding: 1px;
+      border-radius: 50%; flex-shrink: 0;
+      transition: color 0.18s, transform var(--motion-smooth);
+    }
+    .attach-btn:hover { color: var(--primary-purple); transform: scale(1.08); }
+    .attach-btn:active { transform: scale(.94); }
+    .attach-btn svg { width: 21px; height: 21px; }
+
+    .send-btn {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      border: none; color: #fff; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 6px 16px rgba(124,58,237,.45);
+      transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
+      box-shadow: 0 4px 12px rgba(124,58,237,.4);
+      flex-shrink: 0;
+      animation: glowPulse 2.8s ease-in-out infinite;
+    }
+    .send-btn:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(124,58,237,.55); }
+    .send-btn:active { transform: scale(.97); }
+    .send-btn svg { width: 20px; height: 20px; fill: #fff; transition: transform var(--motion-smooth); }
+    .send-btn:hover svg { transform: rotate(-12deg) translateX(1px); }
+    .send-btn.recording { background: linear-gradient(135deg, #DC2626, #7C2D12); }
+
+    /* Logout banner */
+    .logout-btn {
+      position: absolute; top: 16px; right: 24px;
+      background: transparent; border: 1px solid rgba(196,181,253,.18);
+      border-radius: 8px; color: rgba(196,181,253,.6);
+      font-size: 0.75rem; font-weight: 600; cursor: pointer;
+      padding: 6px 12px; font-family: inherit;
+      transition: all 0.18s;
+    }
+    .logout-btn:hover { background: rgba(248,113,113,.1); border-color: var(--error-red); color: var(--error-red); }
+
+    /* Welcome overlay when no chat selected */
+    .welcome-overlay {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: rgba(196,181,253,.35);
+    }
+    .welcome-overlay svg { width: 64px; height: 64px; fill: rgba(124,58,237,.25); }
+    .welcome-overlay h2 { font-size: 1.3rem; color: rgba(196,181,253,.5); font-weight: 700; }
+    .welcome-overlay p { font-size: 0.85rem; }
+
+.details-drawer {
+      background: var(--bg-card);
+      border-left: 1px solid rgba(196,181,253,.1);
+      box-shadow: var(--neu-shadow);
+      overflow-y: auto;
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .drawer-empty {
+      margin: auto 0;
+      color: rgba(196,181,253,.35);
+      font-size: .82rem;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .drawer-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(196,181,253,.08);
+    }
+
+    .drawer-name { color: var(--soft-light); font-weight: 800; }
+    .drawer-meta { color: rgba(196,181,253,.5); font-size: .76rem; margin-top: 3px; }
+    .drawer-section h3 {
+      color: var(--light-purple);
+      font-size: .76rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .media-tile {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: linear-gradient(135deg, rgba(124,58,237,.25), rgba(52,211,153,.16));
+      border: 1px solid rgba(196,181,253,.1);
+      animation: pageFade var(--motion-smooth) both;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: rgba(196,181,253,.62);
+      font-size: .8rem;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(196,181,253,.06);
+    }
+    .info-row strong { color: var(--soft-light); font-weight: 700; }
+
+    .drawer-profile-btn {
+      width: 100%;
+      margin-top: 4px;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(196,181,253,.18);
+      background: var(--overlay);
+      color: var(--light-purple);
+      font: inherit;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background var(--motion-smooth), color var(--motion-smooth), border-color var(--motion-smooth);
+    }
+    .drawer-profile-btn:hover { background: var(--primary-purple); border-color: var(--primary-purple); color: #fff; }
+
+    .media-tile { cursor: pointer; transition: transform var(--motion-smooth), box-shadow var(--motion-smooth); }
+    .media-tile:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 20px rgba(124,58,237,.3); }
+
+.settings-panel {
+      position: fixed;
+      top: 86px;
+      left: 86px;
+      width: 260px;
+      z-index: 80;
+      display: none;
+      background: var(--bg-surface);
+      border: 1px solid rgba(196,181,253,.16);
+      border-radius: 18px;
+      box-shadow: var(--neu-shadow);
+      padding: 14px;
+      animation: pageFade var(--motion-smooth) both;
+    }
+    .settings-panel.open { display: block; }
+    .settings-title {
+      color: var(--soft-light);
+      font-size: .86rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--light-purple);
+      font-size: .82rem;
+    }
+    .theme-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      flex: 0 0 auto;
+    }
+    .theme-switch input { opacity: 0; width: 0; height: 0; }
+    .theme-switch span {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      background: var(--overlay);
+      border: 1px solid rgba(196,181,253,.2);
+      transition: background var(--motion-smooth), border-color var(--motion-smooth);
+    }
+    .theme-switch span::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: var(--light-purple);
+      transition: transform var(--motion-spring), background var(--motion-smooth);
+    }
+    .theme-switch input:checked + span {
+      background: var(--primary-purple);
+      border-color: var(--primary-purple);
+    }
+    .theme-switch input:checked + span::before {
+      transform: translateX(22px);
+      background: #fff;
+    }
+
+    .quick-send-btn {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 70;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: none;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(124,58,237,.42);
+      transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
+      animation: glowPulse 2.8s ease-in-out infinite;
+    }
+    .quick-send-btn:hover { transform: scale(1.08); box-shadow: 0 10px 28px rgba(124,58,237,.58); }
+    .quick-send-btn:active { transform: scale(.96); }
+    .quick-send-btn svg { width: 20px; height: 20px; fill: currentColor; transition: transform var(--motion-smooth); }
+    .quick-send-btn:hover svg { transform: rotate(-12deg) translateX(1px); }
+
+    [data-theme="light"] body,
+    [data-theme="light"] .chat-shell,
+    [data-theme="light"] .chat-main {
+      background: var(--bg-black);
+    }
+[data-theme="light"] .nav-rail,
+    [data-theme="light"] .sidebar,
+    [data-theme="light"] .details-drawer,
+    [data-theme="light"] .settings-panel {
+      background: var(--bg-surface);
+      border-color: rgba(91,33,182,.14);
+      box-shadow: var(--neu-shadow);
+    }
+    [data-theme="light"] .chat-header,
+    [data-theme="light"] .chat-input-area {
+      background: rgba(255,255,255,.82);
+      border-color: rgba(91,33,182,.12);
+    }
+[data-theme="light"] .conv-item:hover,
+    [data-theme="light"] .conv-item:focus-visible {
+      background: var(--overlay);
+    }
+    [data-theme="light"] .conv-item.active {
+      background: rgba(124,58,237,.12);
+    }
+    [data-theme="light"] .conv-preview,
+    [data-theme="light"] .conv-time,
+    [data-theme="light"] .msg-time,
+    [data-theme="light"] .drawer-meta,
+    [data-theme="light"] .info-row,
+    [data-theme="light"] .settings-row {
+      color: rgba(91,33,182,.62);
+    }
+    [data-theme="light"] .date-separator,
+    [data-theme="light"] .welcome-overlay,
+    [data-theme="light"] .drawer-empty {
+      color: rgba(91,33,182,.42);
+    }
+[data-theme="light"] .msg-group.received .msg-bubble,
+    [data-theme="light"] .typing-indicator,
+    [data-theme="light"] .msg-input-wrap,
+    [data-theme="light"] .date-separator,
+    [data-theme="light"] .floating-picker,
+    [data-theme="light"] .picker-option {
+      background: #FFFFFF;
+      border-color: rgba(91,33,182,.14);
+      color: var(--soft-light);
+    }
+    [data-theme="light"] .system-notice,
+    [data-theme="light"] .reply-preview {
+      background: rgba(237,233,254,.78);
+      border-color: rgba(91,33,182,.12);
+      color: rgba(91,33,182,.72);
+    }
+    [data-theme="light"] .drawer-profile,
+    [data-theme="light"] .info-row {
+      border-color: rgba(91,33,182,.1);
+      background-color: rgba(237,233,254,.78);
+    }
+    [data-theme="light"] .drawer-profile {
+      background-color: transparent;
+    }
+    [data-theme="light"] .icon-btn {
+      background: #FFFFFF;
+      border-color: rgba(91,33,182,.14);
+      color: var(--light-purple);
+    }
+    [data-theme="light"] .icon-btn:hover,
+    [data-theme="light"] .icon-btn:focus-visible {
+      background: var(--primary-purple);
+      border-color: var(--primary-purple);
+      color: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(109,40,217,.24);
+    }
+    [data-theme="light"] .icon-btn:active {
+      background: var(--mid-purple);
+      color: #FFFFFF;
+    }
+    [data-theme="light"] .attach-btn {
+      color: rgba(91,33,182,.58);
+    }
+    [data-theme="light"] .attach-btn:hover,
+    [data-theme="light"] .attach-btn:focus-visible {
+      color: var(--primary-purple);
+    }
+    [data-theme="light"] .picker-option:hover,
+    [data-theme="light"] .picker-option:focus-visible {
+      background: var(--overlay);
+      border-color: var(--primary-purple);
+      color: var(--soft-light);
+      outline: none;
+    }
+    [data-theme="light"] .logout-btn {
+      border-color: rgba(91,33,182,.18);
+      color: rgba(91,33,182,.68);
+    }
+
+    /* -- Responsive: fit all devices ----------------------- */
+
+    /* Small laptops — drop the details drawer */
+    @media (max-width: 1280px) {
+      .chat-shell { grid-template-columns: 72px 300px minmax(0, 1fr); }
+      .details-drawer { display: none; }
+    }
+
+    /* Tablets — tighter columns */
+    @media (max-width: 1024px) {
+      .chat-shell { grid-template-columns: 64px 280px minmax(0, 1fr); }
+      .nav-rail { padding: 14px 8px; gap: 12px; }
+      .rail-logo, .rail-profile { width: 38px; height: 38px; }
+    }
+
+    /* Phones & small tablets — the conversation list is the home screen,
+       exactly like WhatsApp: list first, conversation slides in on top. */
+    @media (max-width: 768px) {
+      .chat-shell {
+        display: block;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .nav-rail { display: none; }
+      .details-drawer { display: none; }
+
+      /* -- Screen 1: conversation list -------------------- */
+      .sidebar {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        z-index: 1;
+        transform: translateX(0);
+        border-right: none;
+        border-radius: 0;
+        background: var(--bg-black);
+        transition: transform var(--motion-spring), opacity var(--motion-smooth);
+      }
+
+      /* the app top bar carries the brand + actions, so drop the duplicate */
+      .sidebar-header { display: none; }
+      .sidebar-search { padding: 2px 12px 8px; }
+      .sidebar-search input { height: 44px; border-radius: 14px; }
+      .sidebar-tabs { padding: 0 12px 8px; overflow-x: auto; scrollbar-width: none; }
+      .sidebar-tabs::-webkit-scrollbar { display: none; }
+      .conv-list { padding: 0 0 84px; -webkit-overflow-scrolling: touch; }
+
+      .conv-item {
+        margin: 0;
+        padding: 11px 14px;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        border-bottom: 1px solid rgba(196,181,253,.07);
+      }
+      .conv-item:hover, .conv-item:focus-visible { background: rgba(196,181,253,.05); transform: none; box-shadow: none; }
+      .conv-item.active { background: rgba(124,58,237,.16); box-shadow: inset 3px 0 0 var(--primary-purple); }
+      .conv-item:active { transform: scale(.995); }
+      .conv-item .avatar { width: 46px; height: 46px; }
+
+      /* -- Screen 2: the conversation --------------------- */
+      .chat-main {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        transform: translateX(100%);
+        background: var(--bg-black);
+        transition: transform var(--motion-spring);
+        will-change: transform;
+      }
+      .chat-shell.m-view-chat .chat-main { transform: translateX(0); }
+      .chat-shell.m-view-chat .sidebar { transform: translateX(-24%); opacity: .5; }
+
+      /* Inside a conversation the chat owns the whole screen */
+      .chat-shell.m-view-chat ~ .bottom-nav { display: none; }
+
+      .app-topbar { display: flex; }
+      .bottom-nav { display: flex; }
+
+      .chat-header { display: none; }
+      .chat-main-body { margin-top: 0; }
+      .welcome-overlay, .logout-btn { display: none; }
+
+      /* Neumorphic mobile top bar (spec: 36px avatar / 40px + button) */
+      .app-topbar { background: var(--bg-surface); box-shadow: 0 6px 16px rgba(0,0,0,.28); min-height: 64px; }
+      .app-topbar .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-card); box-shadow: var(--neu-tile); flex-shrink: 0; }
+      .app-topbar.in-conv .icon-btn { color: var(--light-purple); }
+      .app-topbar-title { flex: 1; min-width: 0; font-size: 1.2rem; }
+      .app-topbar .chat-header-profile {
+        flex: 1; min-width: 0;
+        display: flex; align-items: center; gap: 12px;
+        background: none; border: none; cursor: pointer;
+        text-align: left; padding: 0; font-family: inherit;
+        color: inherit;
+      }
+      .app-topbar .chat-header-profile .avatar { width: 38px; height: 38px; border-radius: 50%; }
+      .app-topbar .chat-header-profile .chat-header-info { min-width: 0; }
+      .app-topbar .chat-header-profile .chat-header-name {
+        font-size: 16px; font-weight: 700; color: var(--soft-light);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .app-topbar .chat-header-profile .chat-header-status { font-size: 12px; }
+      .fab-call {
+        width: 40px; height: 40px; border-radius: 50%;
+        border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+        background: var(--bg-card); color: var(--primary-purple); box-shadow: var(--neu-tile);
+        transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
+      }
+      .fab-call svg { width: 20px; height: 20px; fill: currentColor; stroke: none; }
+      .fab-call:active { transform: scale(.92); }
+
+      /* New chat — floats just above the tab bar, bottom right */
+      .fab-new-chat {
+        position: absolute;
+        right: 16px;
+        bottom: 16px;
+        z-index: 30;
+        width: 54px; height: 54px;
+        border-radius: 50%;
+        border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+        box-shadow: 0 10px 26px rgba(124,58,237,.5);
+        transition: transform var(--motion-spring), opacity var(--motion-smooth);
+      }
+      .fab-new-chat svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+      .fab-new-chat:active { transform: scale(.9); }
+      .chat-shell.m-view-chat .fab-new-chat { opacity: 0; pointer-events: none; transform: scale(.6); }
+      [data-theme="light"] .fab-new-chat { box-shadow: 0 10px 24px rgba(91,33,182,.3); }
+
+      .messages-area { padding: 14px 12px; }
+      .msg-bubble { max-width: 82%; }
+      .chat-input-area { padding: 8px 10px; gap: 8px; }
+      /* no tab bar in here, so the chat owns the home-indicator inset */
+      .chat-shell.m-view-chat .chat-input-area { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+      .floating-picker { left: 12px; right: 12px; bottom: 70px; width: auto; }
+      .reply-preview { padding: 10px 14px; }
+
+      [data-theme="light"] .conv-item { border-bottom-color: rgba(91,33,182,.1); }
+      [data-theme="light"] .conv-item:hover,
+      [data-theme="light"] .conv-item:focus-visible { background: rgba(124,58,237,.06); }
+      [data-theme="light"] .conv-item.active { background: rgba(124,58,237,.12); }
+
+      .settings-panel {
+        left: 12px; right: 12px; top: auto; width: auto;
+        bottom: calc(78px + env(safe-area-inset-bottom));
+      }
+      .quick-send-btn { display: none; }
+    }
+
+    @media (max-width: 380px) {
+      .msg-bubble { max-width: 88%; }
+      .chat-header .icon-btn { width: 32px; height: 32px; }
+      .send-btn { width: 42px; height: 42px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="app-frame">
+
+  <!-- Mobile top bar — content swaps between the list, archive and a conversation -->
+  <div class="app-topbar" id="appTopbar">
+    <div class="app-brand">
+      <span class="app-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+      </span>
+      <span class="app-brand-name">Gibee</span>
+    </div>
+    <button class="icon-btn" id="overflowBtn" aria-label="Open menu" aria-expanded="false" aria-controls="overflowMenu">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 4a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Overflow menu: settings + user profile -->
+  <nav class="overflow-menu" id="overflowMenu" aria-label="Account menu">
+    <button class="overflow-row overflow-profile" data-menu="profile">
+      <span class="overflow-avatar" id="overflowAvatar">U</span>
+      <span class="overflow-meta">
+        <strong id="overflowName">You</strong>
+        <small>View profile</small>
+      </span>
+    </button>
+    <div class="overflow-sep"></div>
+    <button class="overflow-row overflow-item" data-menu="settings" aria-expanded="false" aria-controls="settingsPanel">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+      </svg>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+<div class="chat-shell" id="chatShell">
+
+
+  <!-- -- Navigation Rail -------------------------------- -->
+  <nav class="nav-rail" aria-label="Primary">
+    <div class="rail-logo" title="Gibee">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+    </div>
+    <div class="rail-actions">
+      <button class="icon-btn" title="Messages" aria-label="Messages">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H7l-4 3v-3H4a2 2 0 01-2-2V5z"/></svg>
+      </button>
+      <button class="icon-btn" title="Profile" aria-label="Profile">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+      </button>
+      <button class="icon-btn" id="railSettingsBtn" title="Settings" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+    <div class="rail-spacer"></div>
+    <div class="rail-profile" id="railProfile" aria-label="Current user">DU</div>
+  </nav>
+
+  <!-- -- Sidebar ----------------------------------- -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="icon">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+        </div>
+        Gibee
+      </div>
+      <div class="sidebar-actions">
+        <button class="icon-btn" title="New chat" aria-label="New chat">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M10 5v10M5 10h10"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="sidebarSettingsBtn" title="Settings" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
+          <svg viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-archive">
+      <button class="archive-btn" id="archiveBtn" type="button" aria-label="Open archived chats">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h15M4 6.5l1 10a1 1 0 001 .9h8a1 1 0 001-.9l1-10M8 3.5h4"/></svg>
+        <span>Archived</span>
+        <span class="archive-count" id="archiveCount">0</span>
+      </button>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="search" id="sidebarSearch" placeholder="Search chats and messages" aria-label="Search conversations" autocomplete="off" enterkeyhint="search"/>
+    </div>
+
+
+    <div class="sidebar-tabs" id="sidebarTabs" role="tablist" aria-label="Filter chats">
+      <button class="s-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+      <button class="s-tab" data-filter="unread" role="tab" aria-selected="false">Unread</button>
+      <button class="s-tab" data-filter="groups" role="tab" aria-selected="false">Groups</button>
+    </div>
+
+
+    <div class="conv-list" id="convList" role="list"></div>
+
+    <button class="fab-new-chat" id="newChatBtn" type="button" aria-label="Start a new chat">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 5v10M5 10h10"/></svg>
+    </button>
+  </aside>
+
+
+  <!-- -- Main Chat -------------------------------- -->
+  <main class="chat-main" id="chatMain">
+    <div class="chat-main-body" id="chatMainBody">
+      <div class="welcome-overlay" id="welcomeOverlay">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+        <h2>Welcome to ChatApp</h2>
+        <p>Select a conversation to start messaging</p>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Sign out</button>
+  </main>
+
+  <aside class="details-drawer" id="detailsDrawer" aria-label="Conversation details">
+    <div class="drawer-empty">Select a conversation to view shared media, members, and encryption details.</div>
+  </aside>
+
+  <section class="settings-panel" id="settingsPanel" aria-label="Settings">
+    <div class="settings-title">Settings</div>
+    <label class="settings-row" for="themeSwitch">
+      <span>Light mode</span>
+      <span class="theme-switch">
+        <input type="checkbox" id="themeSwitch"/>
+        <span aria-hidden="true"></span>
+      </span>
+    </label>
+    <button class="drawer-profile-btn" id="settingsLogoutBtn" type="button" style="margin-top:14px">Sign out</button>
+  </section>
+</div>
+
+  <!-- Mobile bottom tab bar -->
+  <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
+    <button class="nav-item active" data-nav="chats" aria-label="Chats" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      <span>Chats</span>
+    </button>
+    <button class="nav-item" data-nav="status" aria-label="Status">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg>
+      <span>Status</span>
+    </button>
+    <button class="nav-item" data-nav="calls" aria-label="Calls">
+      <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.58 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.4 11.4 0 00.58 3.6 1 1 0 01-.25 1z"/></svg>
+      <span>Calls</span>
+    </button>
+  </nav>
+</div>
+
+<button class="quick-send-btn" id="quickSendBtn" type="button" aria-label="Send message">
+  <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+</button>
+
+<script src="auth.js"></script>
+<script>
+  // Guard
+  if (!Session.isLoggedIn()) window.location.href = 'index.html';
+
+  const user = Session.get('user') || { name: 'You' };
+  document.getElementById('railProfile').textContent = (user.name || 'DU').split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase();
+
+  const localQueue = {
+    KEY: 'chat_pending_messages',
+    all() {
+      try { return JSON.parse(localStorage.getItem(this.KEY)) || []; } catch(e) { return []; }
+    },
+    save(items) {
+      localStorage.setItem(this.KEY, JSON.stringify(items));
+    },
+    add(message) {
+      const next = this.all().filter(item => item.tempId !== message.tempId);
+      next.push(message);
+      this.save(next);
+    },
+    remove(tempId) {
+      this.save(this.all().filter(item => item.tempId !== tempId));
+    }
+  };
+
+  const socketHub = {
+    connected: navigator.onLine,
+    backoff: 1000,
+    listeners: {},
+    on(event, handler) {
+      this.listeners[event] = this.listeners[event] || [];
+      this.listeners[event].push(handler);
+    },
+    emitLocal(event, payload) {
+      (this.listeners[event] || []).forEach(handler => handler(payload));
+    },
+    send(event, payload) {
+      if (!this.connected) throw new Error('offline');
+      if (event === 'message:send') {
+        setTimeout(() => {
+          this.emitLocal('message:ack', {
+            tempId: payload.tempId,
+            messageId: 'msg_' + Date.now(),
+            status: 'sent'
+          });
+        }, 650);
+      }
+    },
+    reconnect() {
+      this.connected = navigator.onLine;
+      this.emitLocal('presence:update', {
+        userId: 'system',
+        status: this.connected ? 'online' : 'offline',
+        lastSeen: Date.now()
+      });
+      if (!this.connected) {
+        this.backoff = Math.min(this.backoff * 2, 30000);
+        setTimeout(() => this.reconnect(), this.backoff);
+      } else {
+        this.backoff = 1000;
+        flushPendingMessages();
+      }
+    }
+  };
+
+  setInterval(() => {
+    if (socketHub.connected) socketHub.emitLocal('heartbeat:pong', { timestamp: Date.now() });
+  }, 30000);
+
+  window.addEventListener('online', () => socketHub.reconnect());
+  window.addEventListener('offline', () => socketHub.reconnect());
+
+  // -- Seed conversation data -----------------------------
+  const convs = [
+    { id: 1, name: 'Alex Rivera', last: 'Hey, are you free tonight?', time: '2m', unread: 3, color: '#7C3AED', initials: 'AR', online: true, archived: false, members: 2 },
+    { id: 2, name: 'Jordan Lee',  last: 'The meeting is at 3pm',      time: '14m', unread: 0, color: '#2563EB', initials: 'JL', online: true, archived: false, members: 2 },
+    { id: 3, name: 'Team Alpha',  last: 'Sam: I pushed the fix!',     time: '1h',  unread: 7, color: '#059669', initials: 'TA', online: false, archived: false, members: 8 },
+    { id: 4, name: 'Maria Santos', last: "Let's catch up soon",       time: '3h',  unread: 0, color: '#DB2777', initials: 'MS', online: false, archived: false, members: 2 },
+    { id: 5, name: 'Dev Chat',    last: 'New PR opened: feat/auth',   time: '5h',  unread: 2, color: '#D97706', initials: 'DC', online: false, archived: false, members: 5 },
+    { id: 6, name: 'Chris Park',  last: 'Thanks for the help!',       time: 'Tue', unread: 0, color: '#7C3AED', initials: 'CP', online: false, archived: true, members: 2 },
+  ];
+
+  const msgs = {
+    1: [
+      { id: 'm1', sent: false, text: 'Hey! How have you been?', time: '9:12 AM', status: 'sent' },
+      { id: 'm2', sent: true,  text: "I've been great, thanks! Just wrapped up a big project.", time: '9:15 AM', status: 'sent' },
+      { id: 'm3', sent: false, text: 'That sounds awesome! Hey, are you free tonight?', time: '9:30 AM', status: 'sent' },
+    ],
+    2: [
+      { id: 'm4', sent: false, text: 'Morning! Quick heads up - the meeting is at 3pm', time: '8:45 AM', status: 'sent' },
+      { id: 'm5', sent: true,  text: "Got it, I'll be there!", time: '8:50 AM', status: 'sent' },
+    ],
+    3: [
+      { id: 'm6', sent: false, text: 'Sam: Just pushed the auth fix to the repo', time: '7:20 AM', status: 'sent' },
+      { id: 'm7', sent: false, text: 'Jamie: Nice work! I pushed the fix!', time: '7:22 AM', status: 'sent' },
+    ],
+  };
+
+  // -- Render sidebar list --------------------------------
+  const convList = document.getElementById('convList');
+  let activeId = null;
+  const settingsPanel = document.getElementById('settingsPanel');
+  const themeSwitch = document.getElementById('themeSwitch');
+  const settingsTriggers = () =>
+    Array.from(document.querySelectorAll('[aria-controls="settingsPanel"]'));
+
+  function syncThemeSwitch() {
+    if (themeSwitch) themeSwitch.checked = Theme.get() === 'light';
+  }
+
+  function toggleSettingsPanel() {
+    const isOpen = settingsPanel.classList.toggle('open');
+    settingsTriggers().forEach(btn => btn.setAttribute('aria-expanded', String(isOpen)));
+  }
+
+  function closeSettingsPanel() {
+    if (!settingsPanel.classList.contains('open')) return;
+    settingsPanel.classList.remove('open');
+    settingsTriggers().forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+  }
+
+  syncThemeSwitch();
+  settingsTriggers().forEach(btn => {
+    btn.addEventListener('click', event => {
+      event.stopPropagation();
+      closeOverflowMenu();
+      toggleSettingsPanel();
+    });
+  });
+
+  themeSwitch?.addEventListener('change', () => {
+    Theme.set(themeSwitch.checked ? 'light' : 'dark');
+    syncThemeSwitch();
+  });
+
+  document.addEventListener('click', event => {
+    if (!settingsPanel.classList.contains('open')) return;
+    if (settingsPanel.contains(event.target)) return;
+    if (settingsTriggers().some(btn => btn.contains(event.target))) return;
+    closeSettingsPanel();
+  });
+
+
+  // -- Mobile views --------------------------------------
+  // The conversation list is the home screen; opening a chat slides
+  // the conversation over it. Android/iOS back returns to the list.
+  const chatShell = document.getElementById('chatShell');
+  const bottomNav = document.getElementById('bottomNav');
+  const mobileQuery = window.matchMedia('(max-width: 768px)');
+  const isMobile = () => mobileQuery.matches;
+  const isChatOpen = () => chatShell.classList.contains('m-view-chat');
+
+  // Three mobile screens: 'list' (home) -> 'archive' -> 'chat'.
+  // Each step away from home pushes a history entry, so Android/iOS back works.
+  let activeView = 'list';
+
+  const viewFromState = state => {
+    const v = state?.view;
+    return v === 'chat' || v === 'archive' ? v : 'list';
+  };
+
+  function applyView(view, { fromHistory = false } = {}) {
+    activeView = view;
+    if (isMobile()) chatShell.classList.toggle('m-view-chat', view === 'chat');
+    closeSettingsPanel();
+    closeOverflowMenu();
+
+    if (view === 'chat') {
+      renderTopbar(convs.find(c => c.id === activeId) || null);
+    } else {
+      // On desktop the chat panel is independent, so keep the open conversation
+      if (isMobile()) activeId = null;
+      renderConvList();
+      renderTopbar(null);
+      setActiveNav('chats');
+    }
+    syncArchiveButton();
+    if (!fromHistory && isMobile() && history.state?.view) history.state = { view };
+  }
+
+  // Forward navigation pushes a history entry; going back pops one.
+  function goTo(view) {
+    if (!isMobile()) { applyView(view); return; }
+    if (view === 'list') { goBack(); return; }
+    if (history.state?.view !== view) history.pushState({ view }, '');
+    applyView(view);
+  }
+
+  function goBack() {
+    if (!isMobile()) { applyView('list'); return; }
+    if (history.state?.view) history.back();
+    else applyView('list');
+  }
+
+  mobileQuery.addEventListener('change', event => {
+    if (!event.matches && isChatOpen()) chatShell.classList.remove('m-view-chat');
+    closeOverflowMenu();
+  });
+
+  window.addEventListener('popstate', event => {
+    applyView(viewFromState(event.state), { fromHistory: true });
+  });
+
+  function setActiveNav(name) {
+    bottomNav?.querySelectorAll('.nav-item').forEach(item => {
+      const active = item.dataset.nav === name;
+      item.classList.toggle('active', active);
+      if (active) item.setAttribute('aria-current', 'page');
+      else item.removeAttribute('aria-current');
+    });
+  }
+
+  const BACK_ICON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>';
+  const CALL_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>';
+
+  function userInitials() {
+    return (user.name || 'You').trim().split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'U';
+  }
+
+  function archiveCount() {
+    return convs.filter(c => c.archived).length;
+  }
+
+  const BRAND_HTML = `
+    <div class="app-brand">
+      <span class="app-brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+      </span>
+      <span class="app-brand-name">Gibee</span>
+    </div>
+    <button class="icon-btn" id="overflowBtn" aria-label="Open menu" aria-expanded="false" aria-controls="overflowMenu"><svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M10 4a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2z" clip-rule="evenodd"/></svg></button>`;
+
+  function renderTopbar(conv) {
+    const bar = document.getElementById('appTopbar');
+    if (!bar) return;
+
+    if (conv) {
+      bar.classList.add('in-conv');
+      bar.innerHTML = `
+        <button class="icon-btn" id="mobileBackBtn" aria-label="Back">${BACK_ICON}</button>
+        <button class="chat-header-profile" id="mobileConvProfile" aria-label="Open ${escapeHtml(conv.name)}'s profile">
+          <div class="avatar${conv.online ? ' online' : ''}" style="background:${conv.color}22;color:${conv.color};border:1.5px solid ${conv.color}55">${escapeHtml(conv.initials)}</div>
+          <div class="chat-header-info">
+            <div class="chat-header-name">${escapeHtml(conv.name)}</div>
+            <div class="chat-header-status${conv.online ? '' : ' offline'}">${conv.online ? 'Online' : 'Offline'}</div>
+          </div>
+        </button>
+        <button class="icon-btn fab-call" id="mobileCallBtn" aria-label="Voice call">${CALL_ICON}</button>`;
+      document.getElementById('mobileBackBtn')?.addEventListener('click', () => goBack());
+      document.getElementById('mobileConvProfile')?.addEventListener('click', () => openProfilePage(conv.id));
+      document.getElementById('mobileCallBtn')?.addEventListener('click', () => showToast(`Calling ${conv.name}…`, 'info', 2000));
+      document.title = `${conv.name} — Gibee`;
+      return;
+    }
+
+    bar.classList.remove('in-conv');
+    if (activeView === 'archive') {
+      const n = archiveCount();
+      bar.innerHTML = `
+        <button class="icon-btn" id="archiveBackBtn" aria-label="Back to chats">${BACK_ICON}</button>
+        <div class="app-topbar-title" id="mobileTopTitle">Archived<span class="app-topbar-sub">${n} archived ${n === 1 ? 'chat' : 'chats'}</span></div>`;
+      document.getElementById('archiveBackBtn')?.addEventListener('click', () => goBack());
+      document.title = 'Archived — Gibee';
+    } else {
+      bar.innerHTML = BRAND_HTML;
+      document.getElementById('overflowBtn')?.addEventListener('click', toggleOverflowMenu);
+      document.title = 'Gibee';
+    }
+  }
+
+  // -- Overflow menu (three dots) -------------------------
+  const overflowMenu = document.getElementById('overflowMenu');
+
+  function overflowIsOpen() {
+    return !!overflowMenu?.classList.contains('open');
+  }
+
+  function openOverflowMenu() {
+    if (!overflowMenu) return;
+    closeSettingsPanel();
+    overflowMenu.classList.add('open');
+    document.getElementById('overflowBtn')?.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeOverflowMenu() {
+    if (!overflowIsOpen()) return;
+    overflowMenu.classList.remove('open');
+    document.getElementById('overflowBtn')?.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleOverflowMenu() {
+    overflowIsOpen() ? closeOverflowMenu() : openOverflowMenu();
+  }
+
+  overflowMenu?.addEventListener('click', event => {
+    const row = event.target.closest('[data-menu]');
+    if (!row) return;
+    if (row.dataset.menu === 'profile') {
+      closeOverflowMenu();
+      openProfilePage(convs[0]?.id);
+    } else if (row.dataset.menu === 'settings') {
+      // handled by the shared settings trigger below
+      closeOverflowMenu();
+    }
+  });
+
+  document.addEventListener('click', event => {
+    if (!overflowIsOpen()) return;
+    if (overflowMenu.contains(event.target)) return;
+    if (event.target.closest('#overflowBtn')) return;
+    closeOverflowMenu();
+  });
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') { closeOverflowMenu(); closeSettingsPanel(); }
+  });
+
+  function openProfilePage(id, tab) {
+    const conv = convs.find(c => c.id === id);
+    if (!conv) {
+      showToast('Select a conversation first.', 'info', 2000);
+      return;
+    }
+    const params = new URLSearchParams({ id: String(id) });
+    if (tab) params.set('tab', tab);
+    window.location.href = 'profile.html?' + params.toString();
+  }
+
+  bottomNav?.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', event => {
+      const nav = item.dataset.nav;
+      if (nav === 'chats') {
+        setActiveNav('chats');
+        closeSettingsPanel();
+        if (activeView !== 'list') goBack();
+      } else {
+        // Placeholder tabs keep the Chats tab selected
+        setActiveNav('chats');
+        closeSettingsPanel();
+        closeOverflowMenu();
+        const labels = { status: 'Status updates', calls: 'Calls' };
+        showToast(`${labels[nav] || nav} — coming soon.`, 'info', 2000);
+      }
+    });
+  });
+
+  document.getElementById('newChatBtn')?.addEventListener('click', () => {
+    if (activeView !== 'list') goBack();
+    showToast('New chat — search for someone to message.', 'info', 2400);
+    setTimeout(() => document.getElementById('sidebarSearch')?.focus(), 220);
+  });
+
+  document.getElementById('settingsLogoutBtn')?.addEventListener('click', () => {
+    Session.clear();
+    localStorage.removeItem('chat_remember');
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('quickSendBtn')?.addEventListener('click', () => {
+    const sendBtn = document.getElementById('sendBtn');
+    const msgInput = document.getElementById('msgInput');
+    if (sendBtn && msgInput) {
+      if (msgInput.value.trim()) {
+        sendBtn.click();
+      } else {
+        msgInput.focus();
+        showToast('Type a message first.', 'info', 1800);
+      }
+      return;
+    }
+    showToast('Select a conversation to send a message.', 'info', 2200);
+  });
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  }
+
+  function statusMark(status) {
+    if (status === 'sending') return 'Sending';
+    if (status === 'failed') return 'Failed - tap to retry';
+    return 'Sent';
+  }
+
+  function statusClass(status) {
+    return status === 'failed' ? ' failed' : '';
+  }
+
+  function createTempId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  }
+
+  const LIST_FILTERS = {
+    all: () => true,
+    unread: c => c.unread > 0,
+    groups: c => c.members > 2
+  };
+  let listFilter = 'all';
+
+  function renderConvList() {
+    const query = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
+    const passes = LIST_FILTERS[listFilter] || LIST_FILTERS.all;
+    const matches = c => passes(c) && (!query || c.name.toLowerCase().includes(query) || c.last.toLowerCase().includes(query));
+    // The archive is its own screen, so the list shows one set at a time
+    const archivedOnly = activeView === 'archive';
+    const list = convs.filter(c => !!c.archived === archivedOnly && matches(c));
+    const renderItems = items => items.map(c => `
+      <div class="conv-item${c.id === activeId ? ' active' : ''}" data-id="${c.id}" role="listitem" tabindex="0" aria-label="Conversation with ${c.name}">
+        <div class="avatar${c.online ? ' online' : ''}" style="background: ${c.color}22; color: ${c.color}; border: 1.5px solid ${c.color}55">
+          ${escapeHtml(c.initials)}
+        </div>
+        <div class="conv-info">
+          <div class="conv-name">${escapeHtml(c.name)}</div>
+          <div class="conv-preview">${escapeHtml(c.last)}</div>
+        </div>
+        <div class="conv-meta">
+          <span class="conv-time">${escapeHtml(c.time)}</span>
+          ${c.unread > 0 ? `<span class="conv-badge" aria-label="${c.unread} unread">${c.unread}</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    if (!list.length) {
+      convList.innerHTML = archivedOnly
+        ? '<div class="conv-empty">No archived chats</div>'
+        : `<div class="conv-empty">No chats match &ldquo;${escapeHtml(query)}&rdquo;</div>`;
+      return;
+    }
+
+    convList.innerHTML = renderItems(list);
+
+    convList.querySelectorAll('.conv-item').forEach(el => {
+      el.addEventListener('click', () => openChat(+el.dataset.id));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openChat(+el.dataset.id); });
+    });
+  }
+
+  document.getElementById('sidebarSearch')?.addEventListener('input', renderConvList);
+
+  document.getElementById('sidebarTabs')?.addEventListener('click', event => {
+    const tab = event.target.closest('.s-tab');
+    if (!tab) return;
+    listFilter = tab.dataset.filter;
+    document.querySelectorAll('#sidebarTabs .s-tab').forEach(el => {
+      const active = el === tab;
+      el.classList.toggle('active', active);
+      el.setAttribute('aria-selected', String(active));
+    });
+    renderConvList();
+  });
+
+
+  // -- Open a conversation --------------------------------
+  function openChat(id) {
+    activeId = id;
+    const conv = convs.find(c => c.id === id);
+    // clear badge
+    conv.unread = 0;
+    renderConvList();
+
+    const main = document.getElementById('chatMainBody');
+    main.innerHTML = `
+      <div class="chat-header">
+        <button class="icon-btn header-back" id="headerBackBtn" aria-label="Back to conversations">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+        </button>
+        <button class="chat-header-profile" id="openProfileBtn" aria-label="Open ${escapeHtml(conv.name)}'s profile">
+          <div class="avatar${conv.online ? ' online' : ''}" style="background:${conv.color}22;color:${conv.color};border:1.5px solid ${conv.color}55">
+            ${escapeHtml(conv.initials)}
+          </div>
+          <div class="chat-header-info">
+            <div class="chat-header-name">${escapeHtml(conv.name)}</div>
+            <div class="chat-header-status${conv.online ? '' : ' offline'}">${conv.online ? 'Online' : 'Offline'}</div>
+          </div>
+        </button>
+        <button class="icon-btn" title="Search messages" aria-label="Search messages">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 102.472 7.143l3.692 3.692 1.414-1.414-3.692-3.692A4 4 0 008 4zm-2 4a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd"/></svg>
+        </button>
+        <button class="icon-btn" title="Call" aria-label="Voice call">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+        </button>
+        <button class="icon-btn" title="Video call" aria-label="Video call">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12 .69l4-2.5v9.62l-4-2.5V6.69z"/></svg>
+        </button>
+        <button class="icon-btn" id="headerInfoBtn" title="Profile & media" aria-label="View profile and shared media">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+
+      <div class="messages-area" id="messagesArea">
+        <div class="date-separator">Today</div>
+        <div class="system-notice">Messages are encrypted before sending. This demo stores pending messages locally for retry.</div>
+${(msgs[id] || []).map(m => `
+          <div class="msg-group ${m.sent ? 'sent' : 'received'}">
+            <div class="msg-bubble"><span class="bubble-text">${escapeHtml(m.text)}</span><span class="msg-time">${escapeHtml(m.time)}${m.sent ? `<span class="msg-status${statusClass(m.status)}">${statusMark(m.status)}</span>` : ''}</span></div>
+          </div>
+        `).join('')}
+        ${conv.online ? `<div class="typing-indicator" id="typingIndicator" aria-label="${escapeHtml(conv.name)} is typing"><span></span><span></span><span></span></div>` : ''}
+        <div id="msgBottom"></div>
+      </div>
+
+      <div class="reply-preview" id="replyPreview">
+        <div><strong>Replying to ${escapeHtml(conv.name)}</strong><span id="replyText">Latest message</span></div>
+        <button type="button" id="clearReply" aria-label="Cancel reply">&times;</button>
+      </div>
+
+      <div class="chat-input-area">
+        <div class="floating-picker" id="attachmentPicker">
+          <div class="picker-grid">
+            <button type="button" class="picker-option">Image</button>
+            <button type="button" class="picker-option">Doc</button>
+            <button type="button" class="picker-option">Audio</button>
+          </div>
+        </div>
+        <div class="floating-picker" id="emojiPicker">
+          <div class="picker-grid">
+            <button type="button" class="picker-option">Nice</button>
+            <button type="button" class="picker-option">Thanks</button>
+            <button type="button" class="picker-option">On it</button>
+          </div>
+        </div>
+<div class="msg-input-wrap">
+          <button class="attach-btn" id="emojiBtn" aria-label="Open emoji and sticker picker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+          </button>
+          <textarea class="msg-input" id="msgInput" rows="1" placeholder="Type a message…" aria-label="Message input"></textarea>
+          <button class="attach-btn" id="attachBtn" aria-label="Attach file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+          </button>
+          <button class="attach-btn" id="cameraBtn" aria-label="Take photo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>
+            </svg>
+          </button>
+        </div>
+        <button class="send-btn" id="sendBtn" aria-label="Send message">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    `;
+
+    renderDetailsDrawer(conv);
+
+    // Mobile chrome + profile navigation
+    renderTopbar(conv);
+    setActiveNav('chats');
+    document.getElementById('openProfileBtn')?.addEventListener('click', () => openProfilePage(id));
+    document.getElementById('headerInfoBtn')?.addEventListener('click', () => openProfilePage(id));
+    document.getElementById('headerBackBtn')?.addEventListener('click', () => goBack());
+    goTo('chat');
+
+    // scroll to bottom
+    document.getElementById('msgBottom').scrollIntoView();
+
+const msgInput = document.getElementById('msgInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const attachBtn = document.getElementById('attachBtn');
+    const emojiBtn = document.getElementById('emojiBtn');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const attachmentPicker = document.getElementById('attachmentPicker');
+    const emojiPicker = document.getElementById('emojiPicker');
+    const replyPreview = document.getElementById('replyPreview');
+    const typingIndicator = document.getElementById('typingIndicator');
+    let replyActive = false;
+    let typingTimer = null;
+
+    if (typingIndicator) {
+      setTimeout(() => {
+        if (typingIndicator && typingIndicator.isConnected) typingIndicator.style.display = 'none';
+      }, 2400);
+    }
+
+    // auto-resize textarea
+    msgInput.addEventListener('input', () => {
+      msgInput.style.height = 'auto';
+      msgInput.style.height = Math.min(msgInput.scrollHeight, 120) + 'px';
+      socketHub.emitLocal('typing:state', {
+        chatId: 'c_' + id,
+        userId: user.id || 'me',
+        isTyping: !!msgInput.value.trim()
+      });
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        socketHub.emitLocal('typing:state', {
+          chatId: 'c_' + id,
+          userId: user.id || 'me',
+          isTyping: false
+        });
+      }, 900);
+    });
+    // Don't pop the keyboard on phones — native apps wait for a tap
+    if (!isMobile()) msgInput.focus();
+    document.getElementById('sidebarSearch')?.blur();
+
+
+    attachBtn.addEventListener('click', () => {
+      attachmentPicker.classList.toggle('open');
+      emojiPicker.classList.remove('open');
+    });
+
+emojiBtn.addEventListener('click', () => {
+      emojiPicker.classList.toggle('open');
+      attachmentPicker.classList.remove('open');
+    });
+
+    cameraBtn?.addEventListener('click', () => {
+      attachmentPicker.classList.remove('open');
+      emojiPicker.classList.remove('open');
+      showToast('Camera preview coming soon.', 'info', 2000);
+    });
+
+    document.querySelectorAll('.picker-option').forEach(option => {
+      option.addEventListener('click', () => {
+        msgInput.value = `${msgInput.value}${msgInput.value ? ' ' : ''}${option.textContent}`;
+        msgInput.dispatchEvent(new Event('input'));
+        msgInput.focus();
+      });
+    });
+
+    document.querySelectorAll('.msg-bubble').forEach(bubble => {
+      bubble.addEventListener('dblclick', () => {
+        replyActive = true;
+        document.getElementById('replyText').textContent = bubble.textContent.slice(0, 80);
+        replyPreview.classList.add('active');
+        msgInput.focus();
+      });
+    });
+
+    document.getElementById('clearReply').addEventListener('click', () => {
+      replyActive = false;
+      replyPreview.classList.remove('active');
+    });
+
+    function sendMessage() {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const tempId = createTempId();
+      const message = {
+        id: tempId,
+        tempId,
+        sent: true,
+        text: replyActive ? `Reply: ${text}` : text,
+        time: now,
+        status: 'sending'
+      };
+      msgs[id] = msgs[id] || [];
+      msgs[id].push(message);
+      appendMessage(message);
+      msgInput.value = '';
+      msgInput.style.height = 'auto';
+      socketHub.emitLocal('typing:state', { chatId: 'c_' + id, userId: user.id || 'me', isTyping: false });
+      replyActive = false;
+      replyPreview.classList.remove('active');
+conv.last = text.slice(0, 40) + (text.length > 40 ? '…' : '');
+      renderConvList();
+      try {
+        socketHub.send('message:send', {
+          tempId,
+          chatId: 'c_' + id,
+          content: text,
+          type: 'text'
+        });
+      } catch(e) {
+        message.status = 'failed';
+        localQueue.add({ chatId: id, ...message });
+        updateMessageStatus(tempId, 'failed');
+        showToast('You are offline. Message queued for retry.', 'info');
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    msgInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+  }
+
+  function appendMessage(message) {
+    const area = document.getElementById('messagesArea');
+    const bottom = document.getElementById('msgBottom');
+    if (!area || !bottom) return;
+    const div = document.createElement('div');
+    div.className = 'msg-group sent';
+    div.dataset.tempId = message.tempId || message.id;
+    div.innerHTML = `<div class="msg-bubble"><span class="bubble-text">${escapeHtml(message.text)}</span><span class="msg-time">${escapeHtml(message.time)}<span class="msg-status${statusClass(message.status)}">${statusMark(message.status)}</span></span></div>`;
+    area.insertBefore(div, bottom);
+    bottom.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function updateMessageStatus(tempId, status) {
+    Object.values(msgs).forEach(list => {
+      const found = list.find(item => item.tempId === tempId);
+      if (found) found.status = status;
+    });
+    const row = document.querySelector(`[data-temp-id="${tempId}"] .msg-status`);
+    if (row) {
+      row.textContent = statusMark(status);
+      row.classList.toggle('failed', status === 'failed');
+      row.animate(
+        [{ transform: 'scale(.88)', opacity: .65 }, { transform: 'scale(1.08)', opacity: 1 }, { transform: 'scale(1)', opacity: 1 }],
+        { duration: 320, easing: 'cubic-bezier(.22,1.45,.36,1)' }
+      );
+    }
+    if (status === 'sent') localQueue.remove(tempId);
+  }
+
+  function retryPendingMessage(tempId) {
+    const message = localQueue.all().find(item => item.tempId === tempId);
+    if (!message) return;
+    try {
+      updateMessageStatus(tempId, 'sending');
+      socketHub.send('message:send', {
+        tempId,
+        chatId: 'c_' + message.chatId,
+        content: message.text,
+        type: 'text'
+      });
+    } catch(e) {
+      updateMessageStatus(tempId, 'failed');
+      showToast('Still offline. Message remains queued.', 'info');
+    }
+  }
+
+  function flushPendingMessages() {
+    localQueue.all().forEach(message => {
+      try {
+        updateMessageStatus(message.tempId, 'sending');
+        socketHub.send('message:send', {
+          tempId: message.tempId,
+          chatId: 'c_' + message.chatId,
+          content: message.text,
+          type: 'text'
+        });
+      } catch(e) {
+        updateMessageStatus(message.tempId, 'failed');
+      }
+    });
+  }
+
+  socketHub.on('message:ack', payload => {
+    updateMessageStatus(payload.tempId, payload.status);
+  });
+
+  document.addEventListener('click', event => {
+    if (!event.target.classList.contains('msg-status')) return;
+    if (!event.target.textContent.includes('Failed')) return;
+    const row = event.target.closest('[data-temp-id]');
+    if (row) retryPendingMessage(row.dataset.tempId);
+  });
+
+  function renderDetailsDrawer(conv) {
+    const drawer = document.getElementById('detailsDrawer');
+    drawer.innerHTML = `
+      <div class="drawer-profile">
+        <div class="avatar${conv.online ? ' online' : ''}" style="background:${conv.color}22;color:${conv.color};border:1.5px solid ${conv.color}55">${escapeHtml(conv.initials)}</div>
+        <div>
+          <div class="drawer-name">${escapeHtml(conv.name)}</div>
+          <div class="drawer-meta">${conv.members} member${conv.members === 1 ? '' : 's'} · ${conv.online ? 'online' : 'last seen recently'}</div>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <h3>Shared Media</h3>
+        <div class="media-grid"><span class="media-tile" data-media></span><span class="media-tile" data-media></span><span class="media-tile" data-media></span></div>
+      </div>
+      <div class="drawer-section">
+        <h3>Encryption</h3>
+        <div class="info-row"><span>Session</span><strong>E2EE ready</strong></div>
+        <div class="info-row"><span>Local queue</span><strong>${localQueue.all().length}</strong></div>
+        <div class="info-row"><span>Transport</span><strong>${socketHub.connected ? 'Connected' : 'Offline'}</strong></div>
+      </div>
+      <button class="drawer-profile-btn" type="button" data-open-profile>View full profile &amp; media &rarr;</button>
+    `;
+
+    drawer.querySelector('[data-open-profile]')?.addEventListener('click', () => openProfilePage(conv.id));
+    drawer.querySelectorAll('[data-media]').forEach(tile => {
+      tile.addEventListener('click', () => openProfilePage(conv.id, 'media'));
+    });
+  }
+
+  // -- Init ----------------------------------------------
+  const overflowNameEl = document.getElementById('overflowName');
+  const overflowAvatarEl = document.getElementById('overflowAvatar');
+  if (overflowNameEl) overflowNameEl.textContent = user.name || 'You';
+  if (overflowAvatarEl) overflowAvatarEl.textContent = userInitials();
+
+  function syncArchiveButton() {
+    const btn = document.getElementById('archiveBtn');
+    const count = document.getElementById('archiveCount');
+    if (count) count.textContent = String(archiveCount());
+    if (btn) {
+      const on = activeView === 'archive';
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-label', on ? 'Back to chats' : 'Open archived chats');
+    }
+  }
+
+  document.getElementById('archiveBtn')?.addEventListener('click', () => {
+    // On mobile the button is off-screen inside a conversation; on desktop it
+    // filters the sidebar while the chat panel stays put.
+    if (isMobile() && activeView === 'chat') return;
+    goTo(activeView === 'archive' ? 'list' : 'archive');
+  });
+
+  applyView('list', { fromHistory: true });
+  setActiveNav('chats');
+  syncArchiveButton();
+
+  // "New chat" app shortcut
+  if (new URLSearchParams(location.search).has('new')) {
+    history.replaceState(null, '', location.pathname);
+    showToast('New chat — search for someone to message.', 'info', 2600);
+    document.getElementById('sidebarSearch')?.focus();
+  }
+
+  // -- Logout ---------------------------------------------
+  document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    Session.clear();
+    localStorage.removeItem('chat_remember');
+    window.location.href = 'index.html';
+  });
+</script>
+</body>
+</html>

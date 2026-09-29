@@ -1,0 +1,640 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000000"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="ChatApp"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <title>Create Account — ChatApp</title>
+  <meta name="description" content="Create your ChatApp account. Connect with anyone, anywhere."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* -- Avatar Picker -------------------------------------- */
+    .avatar-picker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .avatar-preview {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+      border: 3px solid rgba(196,181,253,.25);
+      overflow: hidden;
+    }
+    .avatar-preview:hover { border-color: var(--primary-purple); box-shadow: 0 0 0 4px rgba(124,58,237,.2); }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+    .avatar-camera-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.18s;
+      border-radius: 50%;
+    }
+    .avatar-preview:hover .avatar-camera-overlay { opacity: 1; }
+    .avatar-camera-overlay svg { width: 24px; height: 24px; fill: #fff; }
+    .avatar-hint { font-size: 0.75rem; color: rgba(196,181,253,.5); }
+
+    /* -- Step panels ---------------------------------------- */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; animation: slideEnter .3s ease both; }
+    @keyframes slideEnter { from { opacity:0; transform: translateX(22px); } to { opacity:1; transform: translateX(0); } }
+
+    /* -- Password strength bar ------------------------------ */
+    .strength-bar-wrap {
+      height: 4px;
+      background: var(--overlay);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .strength-bar {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease, background 0.3s ease;
+      width: 0;
+    }
+    .strength-label {
+      font-size: 0.72rem;
+      margin-top: 4px;
+      color: rgba(196,181,253,.5);
+    }
+
+    /* -- Terms checkbox ------------------------------------- */
+    .terms-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .terms-check {
+      width: 18px; height: 18px;
+      accent-color: var(--primary-purple);
+      margin-top: 2px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .terms-text {
+      font-size: 0.79rem;
+      color: rgba(196,181,253,.65);
+      line-height: 1.5;
+    }
+    .terms-text a { color: var(--light-purple); }
+
+    /* -- DOB field ------------------------------------------ */
+    .dob-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    /* -- Gender row ----------------------------------------- */
+    .gender-row {
+      display: flex;
+      gap: 8px;
+    }
+    .gender-pill {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(196,181,253,.18);
+      background: var(--overlay);
+      color: rgba(196,181,253,.55);
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.18s;
+    }
+    .gender-pill.selected {
+      border-color: var(--primary-purple);
+      background: rgba(124,58,237,.2);
+      color: var(--light-purple);
+    }
+
+    /* -- Success screen ------------------------------------- */
+    .success-screen {
+      text-align: center;
+      padding: 16px 0;
+    }
+    .success-circle {
+      width: 80px; height: 80px;
+      background: rgba(52,211,153,.12);
+      border: 2px solid rgba(52,211,153,.4);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: popIn .45s cubic-bezier(.22,.61,.36,1) both;
+    }
+    @keyframes popIn { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .success-circle svg { width: 36px; height: 36px; stroke: var(--success-green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .success-screen h2 { font-size: 1.4rem; font-weight: 800; color: var(--soft-light); margin-bottom: 8px; }
+    .success-screen p { font-size: 0.85rem; color: var(--light-purple); line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="page-shell">
+  <div class="card" id="signupCard">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
+      </div>
+      <h1>ChatApp</h1>
+      <p>Create your account — it's free</p>
+    </div>
+
+    <!-- Step dots -->
+    <div class="step-indicator" id="stepIndicator" aria-label="Sign up progress">
+      <div class="step-dot active" id="sdot1"></div>
+      <div class="step-dot" id="sdot2"></div>
+      <div class="step-dot" id="sdot3"></div>
+    </div>
+
+    <!-- ----------------------------------------------
+         STEP 1 — Personal Info
+    ---------------------------------------------- -->
+    <div class="step-panel active" id="step1">
+      <div class="section-title">Personal information</div>
+      <p class="section-sub">Let's start with the basics. How should we address you?</p>
+
+      <!-- Avatar -->
+      <div class="avatar-picker">
+        <div class="avatar-preview" id="avatarPreview" role="button" tabindex="0" aria-label="Upload profile photo" title="Click to upload photo">
+          <span id="avatarInitials">?</span>
+          <div class="avatar-camera-overlay">
+            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none" aria-label="Upload photo"/>
+        <span class="avatar-hint">Tap to upload a profile photo</span>
+      </div>
+
+      <!-- Full name -->
+      <div class="form-group">
+        <label class="form-label" for="fullName">Full Name</label>
+        <input class="input-field" id="fullName" type="text" placeholder="Jane Doe"
+               autocomplete="name" aria-label="Full name" aria-describedby="fullNameMsg"/>
+        <div class="field-msg" id="fullNameMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Username -->
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input class="input-field" id="username" type="text" placeholder="janedoe"
+               autocomplete="username" autocapitalize="off" spellcheck="false"
+               maxlength="30" aria-label="Username" aria-describedby="usernameMsg"/>
+        <div class="field-msg" id="usernameMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Gender -->
+      <div class="form-group">
+        <label class="form-label">Gender <span style="color:rgba(196,181,253,.4);font-weight:400">(optional)</span></label>
+        <div class="gender-row" id="genderRow">
+          <button type="button" class="gender-pill" data-val="male">? Male</button>
+          <button type="button" class="gender-pill" data-val="female">? Female</button>
+          <button type="button" class="gender-pill" data-val="other">? Other</button>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="step1Next" disabled>
+        <span class="btn-text">Continue</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- ----------------------------------------------
+         STEP 2 — Contact & Security
+    ---------------------------------------------- -->
+    <div class="step-panel" id="step2">
+      <button class="back-btn" id="back1" aria-label="Go back">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+        Back
+      </button>
+
+      <div class="section-title">Contact & Security</div>
+      <p class="section-sub">Your email and phone will be used to verify and secure your account.</p>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label class="form-label" for="emailInput">Email Address</label>
+        <input class="input-field" id="emailInput" type="email" placeholder="you@example.com"
+               autocomplete="email" aria-label="Email address" aria-describedby="emailMsg"/>
+        <div class="field-msg" id="emailMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Phone -->
+      <div class="form-group">
+        <label class="form-label" for="phoneInput">Phone Number <span style="color:rgba(196,181,253,.4);font-weight:400">(optional)</span></label>
+        <div class="phone-row">
+          <div class="country-select-wrap">
+            <button type="button" class="country-select-btn" id="countryBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span id="selectedDial">+1</span>
+              <svg viewBox="0 0 20 20"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div class="country-dropdown" id="countryDropdown" role="listbox">
+              <input class="country-search" id="countrySearch" type="text" placeholder="Search country…" autocomplete="off"/>
+              <div class="country-list" id="countryList"></div>
+            </div>
+          </div>
+          <input class="input-field" id="phoneInput" type="tel" placeholder="812 345 6789"
+                 inputmode="numeric" autocomplete="tel" maxlength="15"
+                 aria-label="Phone number" aria-describedby="phoneMsg"/>
+        </div>
+        <div class="field-msg" id="phoneMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label class="form-label" for="newPassword">Password</label>
+        <div class="password-wrap">
+          <input class="input-field" id="newPassword" type="password" placeholder="Create a strong password"
+                 autocomplete="new-password" aria-label="Password" aria-describedby="newPasswordMsg"/>
+          <button type="button" class="pwd-toggle" id="pwdToggle1" aria-label="Show password">
+            <svg id="eye1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eyeOff1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="strength-bar-wrap"><div class="strength-bar" id="strengthBar"></div></div>
+        <div class="strength-label" id="strengthLabel"></div>
+        <div class="field-msg" id="newPasswordMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label class="form-label" for="confirmPassword">Confirm Password</label>
+        <div class="password-wrap">
+          <input class="input-field" id="confirmPassword" type="password" placeholder="Repeat your password"
+                 autocomplete="new-password" aria-label="Confirm password" aria-describedby="confirmPasswordMsg"/>
+          <button type="button" class="pwd-toggle" id="pwdToggle2" aria-label="Show confirm password">
+            <svg id="eye2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg id="eyeOff2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </button>
+        </div>
+        <div class="field-msg" id="confirmPasswordMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <button class="btn-primary" id="step2Next" disabled>
+        <span class="btn-text">Continue</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- ----------------------------------------------
+         STEP 3 — Preferences & Finish
+    ---------------------------------------------- -->
+    <div class="step-panel" id="step3">
+      <button class="back-btn" id="back2" aria-label="Go back">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+        Back
+      </button>
+
+      <div class="section-title">Almost there!</div>
+      <p class="section-sub">A few last details to personalise your experience.</p>
+
+      <!-- Date of birth -->
+      <div class="form-group">
+        <label class="form-label">Date of Birth <span style="color:rgba(196,181,253,.4);font-weight:400">(optional)</span></label>
+        <div class="dob-row">
+          <input class="input-field" id="dobDay" type="number" placeholder="DD" min="1" max="31" aria-label="Day"/>
+          <input class="input-field" id="dobMonth" type="number" placeholder="MM" min="1" max="12" aria-label="Month"/>
+          <input class="input-field" id="dobYear" type="number" placeholder="YYYY" min="1900" max="2020" aria-label="Year"/>
+        </div>
+        <div class="field-msg" id="dobMsg" role="alert" aria-live="polite"></div>
+      </div>
+
+      <!-- Bio -->
+      <div class="form-group">
+        <label class="form-label" for="bioInput">About Me <span style="color:rgba(196,181,253,.4);font-weight:400">(optional)</span></label>
+        <textarea class="input-field" id="bioInput" rows="3"
+          placeholder="Tell people a little about yourself…"
+          maxlength="200"
+          style="height:auto;padding:12px 14px;resize:none;line-height:1.5"
+          aria-label="Bio"></textarea>
+        <div class="field-msg" id="bioCount" style="justify-content:flex-end;color:rgba(196,181,253,.35)">0 / 200</div>
+      </div>
+
+      <!-- Notifications toggle -->
+      <div class="remember-row" style="margin-bottom:14px">
+        <label class="toggle-switch" for="notifToggle">
+          <input type="checkbox" id="notifToggle" checked aria-label="Enable notifications"/>
+          <span class="toggle-track"></span>
+        </label>
+        <label class="remember-label" for="notifToggle">Enable push notifications</label>
+      </div>
+
+      <!-- Terms -->
+      <div class="terms-row">
+        <input type="checkbox" class="terms-check" id="termsCheck" aria-label="Accept terms and privacy policy"/>
+        <label class="terms-text" for="termsCheck">
+          I agree to the ChatApp <a href="#" tabindex="-1">Terms of Service</a> and
+          <a href="#" tabindex="-1">Privacy Policy</a>. I confirm I am at least 13 years old.
+        </label>
+      </div>
+
+      <!-- Create Account -->
+      <button class="btn-primary" id="createBtn" disabled>
+        <span class="btn-text">Create Account</span>
+        <span class="spinner" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- ----------------------------------------------
+         STEP 4 — Success
+    ---------------------------------------------- -->
+    <div class="step-panel" id="step4">
+      <div class="success-screen">
+        <div class="success-circle">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h2>You're all set! \uD83C\uDF89</h2>
+        <p>Your account has been created.<br/>Redirecting you to the chat…</p>
+        <div style="margin-top:28px;">
+          <button class="btn-primary" onclick="window.location.href='chat.html'">
+            <span class="btn-text">Go to ChatApp ?</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="card-footer" id="signupFooter">
+      Already have an account? <a href="index.html">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+  if (Session.isLoggedIn()) window.location.href = 'chat.html';
+
+  // -- Step management ---------------------------------------
+  let currentStep = 1;
+  const TOTAL_STEPS = 3;
+
+  function goToStep(n) {
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step' + n).classList.add('active');
+
+    // Update dots
+    for (let i = 1; i <= TOTAL_STEPS; i++) {
+      const dot = document.getElementById('sdot' + i);
+      if (!dot) continue;
+      dot.className = 'step-dot';
+      if (i < n)       dot.classList.add('done');
+      else if (i === n) dot.classList.add('active');
+    }
+
+    // Hide footer on success screen
+    document.getElementById('signupFooter').style.display = n === 4 ? 'none' : '';
+    document.getElementById('stepIndicator').style.display = n === 4 ? 'none' : '';
+    currentStep = n;
+  }
+
+  // -- Avatar ------------------------------------------------
+  const avatarPreview  = document.getElementById('avatarPreview');
+  const avatarInput    = document.getElementById('avatarInput');
+  const avatarInitials = document.getElementById('avatarInitials');
+
+  avatarPreview.addEventListener('click', () => avatarInput.click());
+  avatarPreview.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') avatarInput.click(); });
+
+  avatarInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('Photo must be under 5 MB', 'error'); return; }
+    const url = URL.createObjectURL(file);
+    avatarInitials.style.display = 'none';
+    let img = avatarPreview.querySelector('img');
+    if (!img) { img = document.createElement('img'); img.alt = 'Profile photo'; avatarPreview.insertBefore(img, avatarPreview.firstChild); }
+    img.src = url;
+  });
+
+  // Update initials as user types name
+  document.getElementById('fullName').addEventListener('input', () => {
+    const parts = document.getElementById('fullName').value.trim().split(' ').filter(Boolean);
+    const initials = parts.length >= 2 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ? parts[0][0] : '?');
+    if (!avatarPreview.querySelector('img')) avatarInitials.textContent = initials.toUpperCase();
+  });
+
+  // -- Gender pills ------------------------------------------
+  let selectedGender = '';
+  document.querySelectorAll('.gender-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.gender-pill').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedGender = btn.dataset.val;
+    });
+  });
+
+  // -- Step 1 validation -------------------------------------
+  const fullName   = document.getElementById('fullName');
+  const username   = document.getElementById('username');
+  const step1Next  = document.getElementById('step1Next');
+  const fullNameMsg = document.getElementById('fullNameMsg');
+  const usernameMsg = document.getElementById('usernameMsg');
+
+  function checkStep1() {
+    const nameOk = fullName.value.trim().length >= 2;
+    const userOk = Validate.username(username.value.trim());
+    step1Next.disabled = !(nameOk && userOk);
+  }
+
+  fullName.addEventListener('input', () => {
+    checkStep1();
+    const ok = fullName.value.trim().length >= 2;
+    if (fullName.value.length > 0)
+      setFieldState(fullName, fullNameMsg, ok ? 'success' : 'error', ok ? '' : 'Name must be at least 2 characters');
+    else setFieldState(fullName, fullNameMsg, '', '');
+  });
+
+  username.addEventListener('input', () => {
+    checkStep1();
+    if (username.value.length > 0) {
+      const ok = Validate.username(username.value.trim());
+      setFieldState(username, usernameMsg, ok ? 'success' : 'error',
+        ok ? '' : 'Username: 3–30 chars, letters/numbers/_ only');
+    } else setFieldState(username, usernameMsg, '', '');
+  });
+
+  step1Next.addEventListener('click', () => goToStep(2));
+  fullName.addEventListener('keydown', e => { if (e.key === 'Enter' && !step1Next.disabled) step1Next.click(); });
+
+  // Focus first field
+  fullName.focus();
+
+  // -- Country Picker (Step 2) -------------------------------
+  const countryPicker = initCountrySelect('countryBtn', 'countryDropdown', 'countrySearch', 'countryList', 'selectedDial');
+
+  // -- Step 2 validation -------------------------------------
+  const emailInput       = document.getElementById('emailInput');
+  const phoneInput       = document.getElementById('phoneInput');
+  const newPassword      = document.getElementById('newPassword');
+  const confirmPassword  = document.getElementById('confirmPassword');
+  const step2Next        = document.getElementById('step2Next');
+  const emailMsg         = document.getElementById('emailMsg');
+  const phoneMsg         = document.getElementById('phoneMsg');
+  const newPasswordMsg   = document.getElementById('newPasswordMsg');
+  const confirmPasswordMsg = document.getElementById('confirmPasswordMsg');
+  const strengthBar      = document.getElementById('strengthBar');
+  const strengthLabel    = document.getElementById('strengthLabel');
+
+  // password strength
+  function getStrength(p) {
+    let score = 0;
+    if (p.length >= 8)  score++;
+    if (p.length >= 12) score++;
+    if (/[A-Z]/.test(p)) score++;
+    if (/[0-9]/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+    return score; // 0-5
+  }
+
+  function updateStrength(p) {
+    const s = getStrength(p);
+    const pct  = p.length === 0 ? 0 : Math.max(15, (s / 5) * 100);
+    const colors = ['', '#F87171', '#FBBF24', '#FBBF24', '#34D399', '#34D399'];
+    const labels = ['', 'Weak', 'Fair', 'Fair', 'Strong', 'Very strong'];
+    strengthBar.style.width  = pct + '%';
+    strengthBar.style.background = colors[s] || 'transparent';
+    strengthLabel.textContent = p.length > 0 ? labels[s] : '';
+    strengthLabel.style.color = colors[s] || 'rgba(196,181,253,.5)';
+  }
+
+  function checkStep2() {
+    const emailOk  = Validate.email(emailInput.value.trim());
+    const pwOk     = Validate.password(newPassword.value) && getStrength(newPassword.value) >= 2;
+    const matchOk  = confirmPassword.value === newPassword.value && confirmPassword.value.length > 0;
+    step2Next.disabled = !(emailOk && pwOk && matchOk);
+  }
+
+  emailInput.addEventListener('input', () => {
+    checkStep2();
+    if (emailInput.value.length > 3) {
+      const ok = Validate.email(emailInput.value.trim());
+      setFieldState(emailInput, emailMsg, ok ? 'success' : 'error', ok ? '' : 'Enter a valid email address');
+    } else setFieldState(emailInput, emailMsg, '', '');
+  });
+
+  phoneInput.addEventListener('input', () => { phoneInput.value = phoneInput.value.replace(/\D/g, ''); });
+
+  newPassword.addEventListener('input', () => {
+    updateStrength(newPassword.value);
+    checkStep2();
+    // re-check confirm
+    if (confirmPassword.value.length > 0) {
+      const match = confirmPassword.value === newPassword.value;
+      setFieldState(confirmPassword, confirmPasswordMsg, match ? 'success' : 'error', match ? '' : 'Passwords do not match');
+    }
+  });
+
+  confirmPassword.addEventListener('input', () => {
+    checkStep2();
+    if (confirmPassword.value.length > 0) {
+      const match = confirmPassword.value === newPassword.value;
+      setFieldState(confirmPassword, confirmPasswordMsg, match ? 'success' : 'error', match ? '' : 'Passwords do not match');
+    }
+  });
+
+  // show/hide toggles
+  function mkToggle(toggleId, inputEl, showId, hideId) {
+    document.getElementById(toggleId).addEventListener('click', () => {
+      const isPassword = inputEl.type === 'password';
+      inputEl.type = isPassword ? 'text' : 'password';
+      document.getElementById(showId).style.display = isPassword ? 'none' : 'block';
+      document.getElementById(hideId).style.display = isPassword ? 'block' : 'none';
+    });
+  }
+  mkToggle('pwdToggle1', newPassword, 'eye1', 'eyeOff1');
+  mkToggle('pwdToggle2', confirmPassword, 'eye2', 'eyeOff2');
+
+  step2Next.addEventListener('click', () => {
+    // Simulate username/email availability check
+    setLoading(step2Next, true);
+    setTimeout(() => { setLoading(step2Next, false); goToStep(3); }, 700);
+  });
+
+  document.getElementById('back1').addEventListener('click', () => goToStep(1));
+
+  // -- Step 3 validation -------------------------------------
+  const bioInput    = document.getElementById('bioInput');
+  const bioCount    = document.getElementById('bioCount');
+  const termsCheck  = document.getElementById('termsCheck');
+  const createBtn   = document.getElementById('createBtn');
+
+  function checkStep3() { createBtn.disabled = !termsCheck.checked; }
+
+  termsCheck.addEventListener('change', checkStep3);
+
+  bioInput.addEventListener('input', () => {
+    bioCount.textContent = bioInput.value.length + ' / 200';
+  });
+
+  document.getElementById('back2').addEventListener('click', () => goToStep(2));
+
+  // -- Create Account ----------------------------------------
+  createBtn.addEventListener('click', async () => {
+    setLoading(createBtn, true);
+
+    // Collect all data
+    const accountData = {
+      fullName:   fullName.value.trim(),
+      username:   username.value.trim(),
+      gender:     selectedGender,
+      email:      emailInput.value.trim(),
+      phone:      (countryPicker.getSelected().dial + phoneInput.value).replace('+', ''),
+      password:   newPassword.value,
+      dob: {
+        day:   document.getElementById('dobDay').value,
+        month: document.getElementById('dobMonth').value,
+        year:  document.getElementById('dobYear').value,
+      },
+      bio:           bioInput.value.trim(),
+      notifications: document.getElementById('notifToggle').checked,
+    };
+
+    try {
+      // Simulate registration API call
+      await new Promise(r => setTimeout(r, 1500));
+      // Mock success
+      const mockToken = 'jwt_new_' + Date.now();
+Session.set('access_token', mockToken);
+      Session.set('user', { id: '2', name: accountData.fullName, username: accountData.username });
+      Session.persist();
+      goToStep(4);
+      // Auto-redirect after 2.5s
+      setTimeout(() => window.location.href = 'chat.html', 2500);
+    } catch (err) {
+      showToast(err.message || 'Registration failed. Please try again.', 'error');
+      setLoading(createBtn, false);
+    }
+  });
+</script>
+</body>
+</html>
