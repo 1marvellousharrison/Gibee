@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
@@ -23,6 +23,10 @@
       --motion-smooth: 200ms cubic-bezier(.25,.1,.25,1);
       --motion-spring: 420ms cubic-bezier(.2,.8,.2,1);
       --motion-bounce: 360ms cubic-bezier(.22,1.45,.36,1);
+      /* measured at runtime so the popovers clear notches/safe areas */
+      --topbar-h: 72px;
+      /* how much of the composer the on-screen keyboard is sitting on top of */
+      --kb-inset: 0px;
     }
 
     .chat-shell {
@@ -205,23 +209,90 @@
       box-shadow: var(--neu-inset);
     }
     .sidebar-search input::placeholder { color: rgba(196,181,253,.5); }
+    [data-theme="light"] .sidebar-search input::placeholder { color: rgba(91,33,182,.45); }
     .sidebar-search input:focus { box-shadow: var(--neu-inset), 0 0 0 2px rgba(124,58,237,.3); }
+
+    /* Archive reassurance: shows only while the archive screen is open */
+    .archive-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      flex-shrink: 0;
+      margin: 0 16px 2px;
+      padding: 8px 11px;
+      border-radius: 12px;
+      background: rgba(124,58,237,.1);
+      border: 1px solid rgba(196,181,253,.12);
+      color: rgba(196,181,253,.72);
+      font-size: .68rem;
+      font-weight: 600;
+      line-height: 1.42;
+    }
+    .archive-note[hidden] { display: none; }
+    .archive-note svg { width: 13px; height: 13px; flex-shrink: 0; margin-top: 1px; }
+    [data-theme="light"] .archive-note {
+      background: rgba(124,58,237,.06);
+      border-color: rgba(91,33,182,.1);
+      color: rgba(91,33,182,.72);
+    }
 
     /* Tabs */
     .sidebar-tabs {
       display: flex;
+      align-items: center;
+      gap: 8px;
       padding: 0 16px 12px;
-      gap: 6px;
       flex-shrink: 0;
     }
+    /* The archive is a browse screen, so the filter pills step aside and the
+       encryption note gets the space directly under the search box. */
+    .sidebar-tabs[hidden] { display: none; }
+    .sidebar-tabs-scroll {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sidebar-tabs-scroll::-webkit-scrollbar { display: none; }
     .s-tab {
-      padding: 6px 14px; border-radius: 20px; border: none;
-      background: transparent; color: rgba(196,181,253,.55);
+      padding: 6px 7px; border-radius: 20px;
+      border: 1px solid rgba(196,181,253,.18);
+      background: var(--bg-surface);
+      box-shadow: var(--neu-tile);
+      color: rgba(196,181,253,.75);
       font-size: 0.79rem; font-weight: 600; cursor: pointer;
       font-family: inherit; transition: all 0.18s;
+      white-space: nowrap; flex-shrink: 0;
     }
-    .s-tab.active { background: var(--primary-purple); color: #fff; }
-    .s-tab:hover:not(.active) { background: var(--overlay); color: var(--soft-light); }
+    .s-tab.active {
+      background: var(--primary-purple);
+      border-color: var(--primary-purple);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(124,58,237,.45);
+    }
+    .s-tab:hover:not(.active) { border-color: rgba(124,58,237,.5); color: var(--soft-light); }
+    .s-tab:active { transform: scale(.96); }
+    /* New chat, pinned to the right of the filter pills */
+    .s-tab-add {
+      width: 36px; height: 36px;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(196,181,253,.22);
+      border-radius: 50%;
+      background: var(--bg-surface);
+      box-shadow: var(--neu-tile);
+      color: var(--light-purple);
+      cursor: pointer;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+    }
+    .s-tab-add svg { width: 18px; height: 18px; }
+    .s-tab-add:hover { border-color: var(--primary-purple); color: var(--primary-purple); }
+    .s-tab-add:active { transform: scale(.9); }
+    [data-theme="light"] .s-tab { border-color: rgba(91,33,182,.18); color: rgba(91,33,182,.78); }
+    [data-theme="light"] .s-tab:hover:not(.active) { border-color: var(--primary-purple); color: var(--primary-purple); }
+    [data-theme="light"] .s-tab-add { border-color: rgba(91,33,182,.22); color: var(--primary-purple); }
 
 /* Conversation List */
     .conv-list { overflow-y: auto; flex: 1; padding: 6px 0 12px; }
@@ -271,6 +342,24 @@
       animation: badgePop var(--motion-bounce) both;
     }
 
+    /* -- Archive mode header (desktop) --------------------- */
+    .sidebar-archive-bar { display: none; align-items: center; gap: 10px; min-width: 0; }
+    .sidebar-archive-bar.show { display: flex; }
+    /* The archive bar takes the brand's place while the archive is open. */
+    .sidebar-header.archive-mode .sidebar-brand { display: none; }
+    .sidebar-archive-bar .icon-btn {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card); box-shadow: var(--neu-tile);
+      color: var(--light-purple); border: 1px solid rgba(196,181,253,.16);
+      cursor: pointer;
+    }
+    .sidebar-archive-bar .icon-btn:hover { color: var(--primary-purple); }
+    .sidebar-archive-bar .icon-btn svg { width: 18px; height: 18px; }
+    .sa-title { display: flex; flex-direction: column; font-size: 1.02rem; font-weight: 700; color: var(--soft-light); min-width: 0; }
+    .sa-sub { font-size: 0.72rem; font-weight: 500; color: rgba(196,181,253,.55); margin-top: 1px; }
+    [data-theme="light"] .sa-sub { color: rgba(91,33,182,.6); }
+
     /* -- App brand: "Gibee" wordmark in the top-left ----- */
     .app-brand {
       flex: 1;
@@ -309,7 +398,7 @@
     .overflow-menu {
       display: none;
       position: absolute;
-      top: 70px;
+      top: calc(var(--topbar-h) + 6px);
       right: 12px;
       z-index: 90;
       min-width: 216px;
@@ -338,7 +427,7 @@
       font-weight: 700;
       text-align: left;
       cursor: pointer;
-      transition: background var(--motion-fast);
+      transition: background var(--transition-fast);
     }
     .overflow-row:hover, .overflow-row:focus-visible { background: rgba(124,58,237,.14); outline: none; }
     .overflow-row svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
@@ -365,44 +454,57 @@
     [data-theme="light"] .overflow-menu { box-shadow: 0 22px 50px rgba(91,33,182,.18); border-color: rgba(91,33,182,.12); }
     [data-theme="light"] .overflow-sep { background: rgba(91,33,182,.1); }
 
-    /* -- Archived button at the top of the chat list ----- */
-    .sidebar-archive { padding: 2px 12px 8px; }
-    .archive-btn {
-      display: inline-flex;
+    /* -- Archived entry: sits where "Active conversations" used to be -- */
+    .list-archive-row {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border: 1px solid rgba(196,181,253,.16);
-      border-radius: 999px;
-      background: var(--bg-surface);
-      color: var(--light-purple);
+      gap: 12px;
+      width: 100%;
+      margin: 0;
+      padding: 11px 14px;
+      border: none;
+      border-bottom: 1px solid rgba(196,181,253,.07);
+      background: transparent;
+      color: inherit;
       font-family: inherit;
-      font-size: .8rem;
-      font-weight: 700;
+      text-align: left;
       cursor: pointer;
-      box-shadow: var(--neu-tile);
-      transition: transform var(--motion-fast), background var(--motion-fast);
+      transition: background var(--transition-fast);
     }
-    .archive-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
-    .archive-btn:active { transform: scale(.96); }
-    .archive-count {
-      min-width: 19px; height: 19px;
-      padding: 0 6px;
-      border-radius: 999px;
-      background: rgba(124,58,237,.2);
+    .list-archive-row:hover,
+    .list-archive-row:focus-visible { background: rgba(196,181,253,.05); outline: none; }
+    .list-archive-row:active { transform: scale(.995); }
+    .list-archive-row.active { background: rgba(124,58,237,.16); }
+    .la-icon {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(124,58,237,.18);
+      box-shadow: var(--neu-tile);
       color: var(--light-purple);
-      font-size: .68rem;
-      font-weight: 800;
+    }
+    .la-icon svg { width: 19px; height: 19px; }
+    .la-body { flex: 1; min-width: 0; }
+    .la-label { display: block; font-size: 15px; font-weight: 600; color: var(--soft-light); }
+    .la-sub { display: block; margin-top: 3px; font-size: 13px; color: rgba(196,181,253,.55); }
+    .la-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .la-count {
+      min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 999px;
+      background: rgba(124,58,237,.22);
+      color: var(--light-purple);
+      font-size: 11px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
     }
-    .archive-btn.active {
-      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
-      border-color: transparent;
-      color: #fff;
-    }
-    .archive-btn.active .archive-count { background: rgba(255,255,255,.25); color: #fff; }
-    [data-theme="light"] .archive-btn { border-color: rgba(91,33,182,.14); }
-    [data-theme="light"] .archive-count { background: rgba(124,58,237,.14); color: #5B21B6; }
+    .la-chevron { width: 20px; height: 20px; color: rgba(196,181,253,.4); }
+    .la-chevron svg { width: 100%; height: 100%; display: block; }
+    [data-theme="light"] .list-archive-row { border-bottom-color: rgba(91,33,182,.1); }
+    [data-theme="light"] .list-archive-row:hover { background: rgba(124,58,237,.06); }
+    [data-theme="light"] .list-archive-row.active { background: rgba(124,58,237,.12); }
+    [data-theme="light"] .la-sub { color: rgba(91,33,182,.5); }
+    [data-theme="light"] .la-chevron { color: rgba(91,33,182,.4); }
+    [data-theme="light"] .la-count { background: rgba(124,58,237,.14); color: #5B21B6; }
 
     .conv-empty {
       margin: 30px 16px;
@@ -986,15 +1088,21 @@
 
       /* the app top bar carries the brand + actions, so drop the duplicate */
       .sidebar-header { display: none; }
-      .sidebar-search { padding: 2px 12px 8px; }
-      .sidebar-search input { height: 44px; border-radius: 14px; }
-      .sidebar-tabs { padding: 0 12px 8px; overflow-x: auto; scrollbar-width: none; }
-      .sidebar-tabs::-webkit-scrollbar { display: none; }
-      .conv-list { padding: 0 0 84px; -webkit-overflow-scrolling: touch; }
+    .sidebar-search { padding: 6px 14px 10px; }
+    .sidebar-search input { height: 52px; border-radius: 16px; font-size: 1rem; }
+    .archive-note { margin: 0 14px 2px; padding: 9px 12px; font-size: .72rem; gap: 8px; }
+    .archive-note svg { width: 14px; height: 14px; }
+      .sidebar-tabs { padding: 0 14px 10px; }
+      .sidebar-tabs-scroll { gap: 6px; }
+      .s-tab { padding: 9px 10px; font-size: 0.88rem; }
+      .s-tab-add { width: 37px; height: 37px; }      .conv-list { padding: 0 0 96px; -webkit-overflow-scrolling: touch; }
 
+      /* Conversation rows are a fixed height so the first screen shows a
+         whole, even number of chats before the list scrolls. */
       .conv-item {
         margin: 0;
-        padding: 11px 14px;
+        height: 86px;
+        padding: 0 16px;
         border-radius: 0;
         background: transparent;
         box-shadow: none;
@@ -1003,7 +1111,24 @@
       .conv-item:hover, .conv-item:focus-visible { background: rgba(196,181,253,.05); transform: none; box-shadow: none; }
       .conv-item.active { background: rgba(124,58,237,.16); box-shadow: inset 3px 0 0 var(--primary-purple); }
       .conv-item:active { transform: scale(.995); }
-      .conv-item .avatar { width: 46px; height: 46px; }
+      .conv-item { gap: 14px; }
+      .conv-item .avatar { width: 56px; height: 56px; font-size: 1.15rem; }
+      .conv-item .avatar.online::after { width: 13px; height: 13px; border-width: 2.5px; }
+      .conv-item .conv-name { font-size: 17px; margin-bottom: 4px; }
+      .conv-item .conv-preview { font-size: 14px; }
+      .conv-item .conv-time { font-size: 12.5px; }
+      .conv-item .conv-badge { min-width: 24px; height: 24px; font-size: 12.5px; padding: 0 7px; }
+      .conv-item .conv-meta { gap: 7px; }
+
+      /* The archive row is a secondary link, so it stays a slim band above
+         the conversations rather than a full-height row. */
+      .list-archive-row { padding: 3px 16px; gap: 11px; }
+      .list-archive-row .la-icon { width: 28px; height: 28px; }
+      .list-archive-row .la-icon svg { width: 15px; height: 15px; }
+      .list-archive-row .la-label { font-size: 14.5px; }
+      .list-archive-row .la-sub { margin-top: 1px; font-size: 11px; }
+      .list-archive-row .la-count { min-width: 20px; height: 20px; font-size: 11.5px; }
+      .list-archive-row .la-chevron { width: 16px; height: 16px; }
 
       /* -- Screen 2: the conversation --------------------- */
       .chat-main {
@@ -1029,42 +1154,47 @@
       .welcome-overlay, .logout-btn { display: none; }
 
       /* Neumorphic mobile top bar (spec: 36px avatar / 40px + button) */
-      .app-topbar { background: var(--bg-surface); box-shadow: 0 6px 16px rgba(0,0,0,.28); min-height: 64px; }
-      .app-topbar .icon-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--bg-card); box-shadow: var(--neu-tile); flex-shrink: 0; }
+      .app-topbar { background: var(--bg-surface); box-shadow: 0 6px 16px rgba(0,0,0,.28); min-height: 72px; padding: 0 14px; }
+      .app-topbar .icon-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--bg-card); box-shadow: var(--neu-tile); flex-shrink: 0; }
+      .app-topbar .icon-btn svg { width: 20px; height: 20px; }
       .app-topbar.in-conv .icon-btn { color: var(--light-purple); }
-      .app-topbar-title { flex: 1; min-width: 0; font-size: 1.2rem; }
+      .app-topbar-title { flex: 1; min-width: 0; font-size: 1.32rem; }
+      .app-topbar .app-brand { gap: 12px; }
+      .app-topbar .app-brand-mark { width: 40px; height: 40px; border-radius: 13px; }
+      .app-topbar .app-brand-mark svg { width: 21px; height: 21px; }
+      .app-topbar .app-brand-name { font-size: 1.32rem; }
       .app-topbar .chat-header-profile {
         flex: 1; min-width: 0;
-        display: flex; align-items: center; gap: 12px;
+        display: flex; align-items: center; gap: 13px;
         background: none; border: none; cursor: pointer;
         text-align: left; padding: 0; font-family: inherit;
         color: inherit;
       }
-      .app-topbar .chat-header-profile .avatar { width: 38px; height: 38px; border-radius: 50%; }
+      .app-topbar .chat-header-profile .avatar { width: 44px; height: 44px; border-radius: 50%; font-size: 1rem; }
       .app-topbar .chat-header-profile .chat-header-info { min-width: 0; }
       .app-topbar .chat-header-profile .chat-header-name {
-        font-size: 16px; font-weight: 700; color: var(--soft-light);
+        font-size: 18px; font-weight: 700; color: var(--soft-light);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       }
-      .app-topbar .chat-header-profile .chat-header-status { font-size: 12px; }
+      .app-topbar .chat-header-profile .chat-header-status { font-size: 13px; }
       .fab-call {
-        width: 40px; height: 40px; border-radius: 50%;
+        width: 44px; height: 44px; border-radius: 50%;
         border: none; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
         flex-shrink: 0;
         background: var(--bg-card); color: var(--primary-purple); box-shadow: var(--neu-tile);
         transition: transform var(--motion-smooth), box-shadow var(--motion-smooth);
       }
-      .fab-call svg { width: 20px; height: 20px; fill: currentColor; stroke: none; }
+      .fab-call svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
       .fab-call:active { transform: scale(.92); }
 
       /* New chat — floats just above the tab bar, bottom right */
       .fab-new-chat {
         position: absolute;
-        right: 16px;
-        bottom: 16px;
+        right: 18px;
+        bottom: 18px;
         z-index: 30;
-        width: 54px; height: 54px;
+        width: 60px; height: 60px;
         border-radius: 50%;
         border: none; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
@@ -1078,12 +1208,21 @@
       .chat-shell.m-view-chat .fab-new-chat { opacity: 0; pointer-events: none; transform: scale(.6); }
       [data-theme="light"] .fab-new-chat { box-shadow: 0 10px 24px rgba(91,33,182,.3); }
 
-      .messages-area { padding: 14px 12px; }
-      .msg-bubble { max-width: 82%; }
-      .chat-input-area { padding: 8px 10px; gap: 8px; }
+      .messages-area { padding: 16px 14px; gap: 18px; }
+      .msg-bubble { max-width: 82%; font-size: 15.5px; line-height: 1.55; padding: 11px 15px; border-radius: 20px; }
+      .msg-time { font-size: 11.5px; }
+      .date-separator { font-size: 0.8rem; }
+      .chat-input-area { padding: 10px 12px; gap: 10px; }
+      .chat-input-area .msg-input { font-size: 16px; }
+      .chat-input-area .attach-btn svg { width: 24px; height: 24px; }
       /* no tab bar in here, so the chat owns the home-indicator inset */
-      .chat-shell.m-view-chat .chat-input-area { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
-      .floating-picker { left: 12px; right: 12px; bottom: 70px; width: auto; }
+      /* Breathing room under the composer, plus whatever the on-screen keyboard
+         covers. The app frame is 100dvh, which already shrinks on Android but
+         not on iOS, so --kb-inset makes up the difference there. */
+      .chat-shell.m-view-chat .chat-input-area {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom) + var(--kb-inset, 0px));
+      }
+      .floating-picker { left: 12px; right: 12px; bottom: 84px; width: auto; }
       .reply-preview { padding: 10px 14px; }
 
       [data-theme="light"] .conv-item { border-bottom-color: rgba(91,33,182,.1); }
@@ -1091,9 +1230,18 @@
       [data-theme="light"] .conv-item:focus-visible { background: rgba(124,58,237,.06); }
       [data-theme="light"] .conv-item.active { background: rgba(124,58,237,.12); }
 
+      /* Settings drops from the top bar, so the theme switch sits high
+         on screen instead of floating over the middle of the list. */
       .settings-panel {
-        left: 12px; right: 12px; top: auto; width: auto;
-        bottom: calc(78px + env(safe-area-inset-bottom));
+        left: 12px; right: 12px; width: auto;
+        top: calc(var(--topbar-h) + 6px);
+        bottom: auto;
+        border-radius: 20px;
+        animation: settingsDrop 180ms cubic-bezier(.25,.1,.25,1) both;
+      }
+      @keyframes settingsDrop {
+        from { opacity: 0; transform: translateY(-12px); }
+        to { opacity: 1; transform: none; }
       }
       .quick-send-btn { display: none; }
     }
@@ -1144,6 +1292,25 @@
       </span>
     </button>
     <div class="overflow-sep"></div>
+    <button class="overflow-row overflow-item" data-menu="new-group">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path d="M12.5 4a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm-8 2.5A2.5 2.5 0 117 4a2.5 2.5 0 01-2.5 2.5zM.9 15.6c0-2 2.3-3.6 5.1-3.6.5 0 1 .1 1.5.2a4.4 4.4 0 00-1 2.6c0 .4 0 .7.1 1.1H.9v-.7zm11.6.3a4.4 4.4 0 00-1-2.6 4 4 0 00-.3 3.7l1.3-1.1zM12.2 9.6A2.2 2.2 0 1115 9.6a2.2 2.2 0 01-2.8 2.1l2.1 1.8-1.2 1.4-2.2-2.1a2.2 2.2 0 01-.7-3.2zm4.2-5.1a.9.9 0 011.3 1.3l-1.1 1.1-1.3-1.3 1.1-1.1z"/>
+      </svg>
+      <span>New group</span>
+    </button>
+    <button class="overflow-row overflow-item" data-menu="starred">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 1.6l2.47 5.01 5.53.8-4 3.9.94 5.5L10 14.22l-4.94 2.6.94-5.5-4-3.9 5.53-.8L10 1.6z" clip-rule="evenodd"/>
+      </svg>
+      <span>Starred</span>
+    </button>
+    <button class="overflow-row overflow-item" data-menu="read-all">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path d="M7.7 13.3a1 1 0 01-1.4 0l-3-3a1 1 0 111.4-1.4L7 11.2l5.3-5.3a1 1 0 111.4 1.4L7.7 13.3zM14 9a1 1 0 110 2h-1a1 1 0 110-2h1zM14 4a1 1 0 110 2h-1a1 1 0 110-2h1zm-3 3a1 1 0 110 2h-1a1 1 0 110-2h1zm-3 3a1 1 0 110 2h-1a1 1 0 110-2h1zM3 9a1 1 0 110 2H2a1 1 0 110-2h1zm0-5a1 1 0 110 2H2a1 1 0 110-2h1zm0 8a1 1 0 110 2H2a1 1 0 110-2h1z"/>
+      </svg>
+      <span>Read all</span>
+    </button>
+    <div class="overflow-sep"></div>
     <button class="overflow-row overflow-item" data-menu="settings" aria-expanded="false" aria-controls="settingsPanel">
       <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
         <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
@@ -1178,6 +1345,14 @@
   <!-- -- Sidebar ----------------------------------- -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
+      <!-- Shown instead of the brand while the archive is open, so the desktop
+           sidebar has a way back now that the archive row is gone there. -->
+      <div class="sidebar-archive-bar" id="sidebarArchiveBar">
+        <button class="icon-btn" id="archiveSidebarBack" aria-label="Back to all chats">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+        </button>
+        <span class="sa-title">Archived<span class="sa-sub" id="archiveSidebarSub"></span></span>
+      </div>
       <div class="sidebar-brand">
         <div class="icon">
           <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
@@ -1198,23 +1373,29 @@
       </div>
     </div>
 
-    <div class="sidebar-archive">
-      <button class="archive-btn" id="archiveBtn" type="button" aria-label="Open archived chats">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h15M4 6.5l1 10a1 1 0 001 .9h8a1 1 0 001-.9l1-10M8 3.5h4"/></svg>
-        <span>Archived</span>
-        <span class="archive-count" id="archiveCount">0</span>
-      </button>
-    </div>
-
     <div class="sidebar-search">
       <input type="search" id="sidebarSearch" placeholder="Search chats and messages" aria-label="Search conversations" autocomplete="off" enterkeyhint="search"/>
     </div>
 
+    <p class="archive-note" id="archiveNote" hidden>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+        <rect x="3.2" y="7" width="9.6" height="6.6" rx="1.6"/>
+        <path d="M5.6 7V5.2a2.4 2.4 0 014.8 0V7" stroke-linecap="round"/>
+      </svg>
+      <span>End-to-end encrypted. Archived chats are visible only to you.</span>
+    </p>
 
-    <div class="sidebar-tabs" id="sidebarTabs" role="tablist" aria-label="Filter chats">
-      <button class="s-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
-      <button class="s-tab" data-filter="unread" role="tab" aria-selected="false">Unread</button>
-      <button class="s-tab" data-filter="groups" role="tab" aria-selected="false">Groups</button>
+
+    <div class="sidebar-tabs">
+      <div class="sidebar-tabs-scroll" id="sidebarTabs" role="tablist" aria-label="Filter chats">
+        <button class="s-tab active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="s-tab" data-filter="unread" role="tab" aria-selected="false">Unread</button>
+        <button class="s-tab" data-filter="groups" role="tab" aria-selected="false">Groups</button>
+        <button class="s-tab" data-filter="favorites" role="tab" aria-selected="false">Favorites</button>
+      </div>
+      <button class="s-tab-add" id="newChatTabBtn" type="button" aria-label="Start a new chat" title="New chat">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 4.5v11M4.5 10h11"/></svg>
+      </button>
     </div>
 
 
@@ -1231,7 +1412,7 @@
     <div class="chat-main-body" id="chatMainBody">
       <div class="welcome-overlay" id="welcomeOverlay">
         <svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2zm-2 10H6v-2h12v2zm0-4H6V6h12v2z"/></svg>
-        <h2>Welcome to ChatApp</h2>
+        <h2>Welcome to Gibee</h2>
         <p>Select a conversation to start messaging</p>
       </div>
     </div>
@@ -1268,6 +1449,10 @@
     <button class="nav-item" data-nav="calls" aria-label="Calls">
       <svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.58 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.4 11.4 0 00.58 3.6 1 1 0 01-.25 1z"/></svg>
       <span>Calls</span>
+    </button>
+    <button class="nav-item" data-nav="games" aria-label="Games">
+      <svg viewBox="0 0 24 24"><rect x="2.5" y="7" width="19" height="11.5" rx="4"/><path d="M7 10.5v4M5 12.5h4"/><circle cx="16" cy="11.5" r="1.1"/><circle cx="18.5" cy="14" r="1.1"/></svg>
+      <span>Games</span>
     </button>
   </nav>
 </div>
@@ -1351,12 +1536,13 @@
 
   // -- Seed conversation data -----------------------------
   const convs = [
-    { id: 1, name: 'Alex Rivera', last: 'Hey, are you free tonight?', time: '2m', unread: 3, color: '#7C3AED', initials: 'AR', online: true, archived: false, members: 2 },
-    { id: 2, name: 'Jordan Lee',  last: 'The meeting is at 3pm',      time: '14m', unread: 0, color: '#2563EB', initials: 'JL', online: true, archived: false, members: 2 },
-    { id: 3, name: 'Team Alpha',  last: 'Sam: I pushed the fix!',     time: '1h',  unread: 7, color: '#059669', initials: 'TA', online: false, archived: false, members: 8 },
-    { id: 4, name: 'Maria Santos', last: "Let's catch up soon",       time: '3h',  unread: 0, color: '#DB2777', initials: 'MS', online: false, archived: false, members: 2 },
-    { id: 5, name: 'Dev Chat',    last: 'New PR opened: feat/auth',   time: '5h',  unread: 2, color: '#D97706', initials: 'DC', online: false, archived: false, members: 5 },
-    { id: 6, name: 'Chris Park',  last: 'Thanks for the help!',       time: 'Tue', unread: 0, color: '#7C3AED', initials: 'CP', online: false, archived: true, members: 2 },
+    { id: 1, name: 'Alex Rivera', last: 'Hey, are you free tonight?', time: '2m', unread: 3, color: '#7C3AED', initials: 'AR', online: true, archived: false, favorite: true, members: 2 },
+    { id: 2, name: 'Jordan Lee',  last: 'The meeting is at 3pm',      time: '14m', unread: 0, color: '#2563EB', initials: 'JL', online: true, archived: false, favorite: false, members: 2 },
+    { id: 3, name: 'Team Alpha',  last: 'Sam: I pushed the fix!',     time: '1h',  unread: 7, color: '#059669', initials: 'TA', online: false, archived: false, favorite: true, members: 8 },
+    { id: 4, name: 'Maria Santos', last: "Let's catch up soon",       time: '3h',  unread: 0, color: '#DB2777', initials: 'MS', online: false, archived: false, favorite: false, members: 2 },
+    { id: 5, name: 'Dev Chat',    last: 'New PR opened: feat/auth',   time: '5h',  unread: 2, color: '#D97706', initials: 'DC', online: false, archived: false, favorite: true, members: 5 },
+    { id: 6, name: 'Chris Park',  last: 'Thanks for the help!',       time: 'Tue', unread: 0, color: '#7C3AED', initials: 'CP', online: false, archived: true, favorite: false, members: 2 },
+    { id: 7, name: 'Priya Nair',  last: 'Sent you the photos',        time: '8h',  unread: 1, color: '#0EA5E9', initials: 'PN', online: true, archived: false, favorite: false, members: 2 },
   ];
 
   const msgs = {
@@ -1428,6 +1614,40 @@
   const mobileQuery = window.matchMedia('(max-width: 768px)');
   const isMobile = () => mobileQuery.matches;
   const isChatOpen = () => chatShell.classList.contains('m-view-chat');
+
+  // The top bar grows with the device safe-area inset, so the popovers that
+  // hang off it are positioned from a measured height rather than a constant.
+  const topbar = document.getElementById('appTopbar');
+  function syncTopbarHeight() {
+    const h = topbar ? Math.round(topbar.getBoundingClientRect().height) : 64;
+    if (h > 0) document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+  window.addEventListener('resize', syncTopbarHeight);
+  if (window.ResizeObserver && topbar) new ResizeObserver(syncTopbarHeight).observe(topbar);
+
+  // On-screen keyboards sit on top of the composer. The app frame is 100dvh,
+  // which already shrinks on Android Chrome, but iOS keeps the layout viewport
+  // at full height -- so measure the visual viewport and pad the composer by
+  // whatever is hidden underneath. The offset term matters because iOS also
+  // scrolls the page when the keyboard opens.
+  let kbInset = 0;
+  function syncKeyboardInset() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    if (covered === kbInset) return;
+    kbInset = covered;
+    document.documentElement.style.setProperty('--kb-inset', covered + 'px');
+  }
+  if (window.visualViewport) {
+    visualViewport.addEventListener('resize', syncKeyboardInset);
+    visualViewport.addEventListener('scroll', syncKeyboardInset);
+  }
+  // Rotating with the keyboard open changes the viewport without firing a
+  // reliable resize, so re-measure once the new layout settles.
+  window.addEventListener('orientationchange', () => setTimeout(syncKeyboardInset, 300));
+  document.addEventListener('focusin', () => setTimeout(syncKeyboardInset, 120));
+  document.addEventListener('focusout', () => setTimeout(syncKeyboardInset, 120));
 
   // Three mobile screens: 'list' (home) -> 'archive' -> 'chat'.
   // Each step away from home pushes a history entry, so Android/iOS back works.
@@ -1507,10 +1727,11 @@
       </span>
       <span class="app-brand-name">Gibee</span>
     </div>
+    <button class="icon-btn" id="topbarCameraBtn" aria-label="Open camera" title="Camera"><svg viewBox="0 0 20 20" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5h2.8l1.2-2h6l1.2 2H17a1 1 0 011 1V14a1 1 0 01-1 1H3a1 1 0 01-1-1V7.5a1 1 0 011-1z"/><circle cx="10" cy="10.5" r="3.1"/></svg></button>
     <button class="icon-btn" id="overflowBtn" aria-label="Open menu" aria-expanded="false" aria-controls="overflowMenu"><svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M10 4a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2z" clip-rule="evenodd"/></svg></button>`;
 
   function renderTopbar(conv) {
-    const bar = document.getElementById('appTopbar');
+    const bar = topbar;
     if (!bar) return;
 
     if (conv) {
@@ -1542,9 +1763,11 @@
       document.title = 'Archived — Gibee';
     } else {
       bar.innerHTML = BRAND_HTML;
+      document.getElementById('topbarCameraBtn')?.addEventListener('click', () => showToast('Camera — coming soon.', 'info', 2000));
       document.getElementById('overflowBtn')?.addEventListener('click', toggleOverflowMenu);
       document.title = 'Gibee';
     }
+    syncTopbarHeight();
   }
 
   // -- Overflow menu (three dots) -------------------------
@@ -1577,6 +1800,15 @@
     if (row.dataset.menu === 'profile') {
       closeOverflowMenu();
       openProfilePage(convs[0]?.id);
+    } else if (row.dataset.menu === 'new-group') {
+      closeOverflowMenu();
+      showToast('New group - coming soon.', 'info', 2200);
+    } else if (row.dataset.menu === 'starred') {
+      closeOverflowMenu();
+      showToast('Starred messages - coming soon.', 'info', 2200);
+    } else if (row.dataset.menu === 'read-all') {
+      closeOverflowMenu();
+      markAllRead();
     } else if (row.dataset.menu === 'settings') {
       // handled by the shared settings trigger below
       closeOverflowMenu();
@@ -1617,17 +1849,20 @@
         setActiveNav('chats');
         closeSettingsPanel();
         closeOverflowMenu();
-        const labels = { status: 'Status updates', calls: 'Calls' };
+        const labels = { status: 'Status updates', calls: 'Calls', games: 'Games' };
         showToast(`${labels[nav] || nav} — coming soon.`, 'info', 2000);
       }
     });
   });
 
-  document.getElementById('newChatBtn')?.addEventListener('click', () => {
+  function startNewChat() {
     if (activeView !== 'list') goBack();
     showToast('New chat — search for someone to message.', 'info', 2400);
     setTimeout(() => document.getElementById('sidebarSearch')?.focus(), 220);
-  });
+  }
+
+  document.getElementById('newChatBtn')?.addEventListener('click', startNewChat);
+  document.getElementById('newChatTabBtn')?.addEventListener('click', startNewChat);
 
   document.getElementById('settingsLogoutBtn')?.addEventListener('click', () => {
     Session.clear();
@@ -1669,20 +1904,61 @@
     return 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2);
   }
 
-  const LIST_FILTERS = {
-    all: () => true,
-    unread: c => c.unread > 0,
-    groups: c => c.members > 2
-  };
+    const LIST_FILTERS = {
+      all: () => true,
+      unread: c => c.unread > 0,
+      groups: c => c.members > 2,
+      favorites: c => c.favorite === true
+    };
   let listFilter = 'all';
+
+  // The archive row is re-rendered with the list, so rebind on every render.
+  function wireArchiveRow() {
+    document.getElementById('archiveBtn')?.addEventListener('click', () => {
+      // On mobile the row scrolls away inside a conversation; on desktop it
+      // filters the sidebar while the chat panel stays put.
+      if (isMobile() && activeView === 'chat') return;
+      goTo('archive');
+    });
+  }
+
+  // Desktop-only way out of the archive, since its top bar is hidden.
+  document.getElementById('archiveSidebarBack')?.addEventListener('click', () => goBack());
 
   function renderConvList() {
     const query = (document.getElementById('sidebarSearch')?.value || '').trim().toLowerCase();
-    const passes = LIST_FILTERS[listFilter] || LIST_FILTERS.all;
-    const matches = c => passes(c) && (!query || c.name.toLowerCase().includes(query) || c.last.toLowerCase().includes(query));
     // The archive is its own screen, so the list shows one set at a time
     const archivedOnly = activeView === 'archive';
+    // The archive hides the filter pills, so it must not honour a filter that
+    // is no longer visible -- otherwise a leftover "Favorites" would blank it.
+    const passes = archivedOnly ? () => true : (LIST_FILTERS[listFilter] || LIST_FILTERS.all);
+    const matches = c => passes(c) && (!query || c.name.toLowerCase().includes(query) || c.last.toLowerCase().includes(query));
     const list = convs.filter(c => !!c.archived === archivedOnly && matches(c));
+    const n = archivedOnly ? convs.filter(c => !c.archived).length : archiveCount();
+
+    // Desktop has no app top bar, so the sidebar header carries the way back.
+    const archiveBar = document.getElementById('sidebarArchiveBar');
+    if (archiveBar) {
+      archiveBar.classList.toggle('show', archivedOnly);
+      archiveBar.closest('.sidebar-header')?.classList.toggle('archive-mode', archivedOnly);
+      const sub = document.getElementById('archiveSidebarSub');
+      if (sub) {
+        const total = archiveCount();
+        sub.textContent = `${total} archived ${total === 1 ? 'chat' : 'chats'}`;
+      }
+    }
+    // The search box and the encryption note both speak to the archive screen.
+    const search = document.getElementById('sidebarSearch');
+    if (search) {
+      search.placeholder = archivedOnly ? 'Search archived chats' : 'Search chats and messages';
+      search.setAttribute('aria-label', archivedOnly ? 'Search archived conversations' : 'Search conversations');
+    }
+    const note = document.getElementById('archiveNote');
+    if (note) note.hidden = !archivedOnly;
+    // No filtering in the archive: the pills would only get in the way of the note.
+    const tabs = document.querySelector('.sidebar-tabs');
+    if (tabs) tabs.hidden = archivedOnly;
+
     const renderItems = items => items.map(c => `
       <div class="conv-item${c.id === activeId ? ' active' : ''}" data-id="${c.id}" role="listitem" tabindex="0" aria-label="Conversation with ${c.name}">
         <div class="avatar${c.online ? ' online' : ''}" style="background: ${c.color}22; color: ${c.color}; border: 1.5px solid ${c.color}55">
@@ -1699,14 +1975,35 @@
       </div>
     `).join('');
 
+    // Archived lives as a slim band at the top of the list, where the old
+    // "Active conversations" label used to sit. The archive screen itself has
+    // no such row: it returns via the top bar on mobile and the sidebar
+    // header on desktop.
+    const archiveRow = archivedOnly
+      ? ''
+      : `<button class="list-archive-row" id="archiveBtn" type="button" aria-label="Open archived chats">
+          <span class="la-icon" aria-hidden="true">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5h15M4 6.5l1 10a1 1 0 001 .9h8a1 1 0 001-.9l1-10M8 3.5h4"/></svg>
+          </span>
+          <span class="la-body">
+            <span class="la-label">Archived</span>
+            <span class="la-sub">${n} archived ${n === 1 ? 'chat' : 'chats'}</span>
+          </span>
+          <span class="la-right">
+            ${n ? `<span class="la-count">${n}</span>` : ''}
+            <span class="la-chevron" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4l6 6-6 6"/></svg></span>
+          </span>
+        </button>`;
+
     if (!list.length) {
-      convList.innerHTML = archivedOnly
-        ? '<div class="conv-empty">No archived chats</div>'
-        : `<div class="conv-empty">No chats match &ldquo;${escapeHtml(query)}&rdquo;</div>`;
+      convList.innerHTML = archiveRow + `<div class="conv-empty">${archivedOnly ? 'No archived chats' : `No chats match &ldquo;${escapeHtml(query)}&rdquo;`}</div>`;
+      wireArchiveRow();
       return;
     }
 
-    convList.innerHTML = renderItems(list);
+    convList.innerHTML = archiveRow + renderItems(list);
+
+    wireArchiveRow();
 
     convList.querySelectorAll('.conv-item').forEach(el => {
       el.addEventListener('click', () => openChat(+el.dataset.id));
@@ -1730,6 +2027,13 @@
 
 
   // -- Open a conversation --------------------------------
+  function markAllRead() {
+    const changed = convs.some(c => c.unread > 0);
+    convs.forEach(c => { c.unread = 0; });
+    renderConvList();
+    showToast(changed ? 'All chats marked as read.' : 'No unread chats.', 'info', 1800);
+  }
+
   function openChat(id) {
     activeId = id;
     const conv = convs.find(c => c.id === id);
@@ -2066,21 +2370,9 @@ conv.last = text.slice(0, 40) + (text.length > 40 ? '…' : '');
 
   function syncArchiveButton() {
     const btn = document.getElementById('archiveBtn');
-    const count = document.getElementById('archiveCount');
-    if (count) count.textContent = String(archiveCount());
-    if (btn) {
-      const on = activeView === 'archive';
-      btn.classList.toggle('active', on);
-      btn.setAttribute('aria-label', on ? 'Back to chats' : 'Open archived chats');
-    }
+    if (!btn) return;
+    btn.classList.toggle('active', activeView === 'archive');
   }
-
-  document.getElementById('archiveBtn')?.addEventListener('click', () => {
-    // On mobile the button is off-screen inside a conversation; on desktop it
-    // filters the sidebar while the chat panel stays put.
-    if (isMobile() && activeView === 'chat') return;
-    goTo(activeView === 'archive' ? 'list' : 'archive');
-  });
 
   applyView('list', { fromHistory: true });
   setActiveNav('chats');

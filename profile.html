@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="ChatApp"/>
+  <meta name="apple-mobile-web-app-title" content="Gibee"/>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
@@ -20,6 +20,8 @@
       --motion-smooth: 200ms cubic-bezier(.25,.1,.25,1);
       --motion-spring: 420ms cubic-bezier(.2,.8,.2,1);
       --motion-bounce: 360ms cubic-bezier(.22,1.45,.36,1);
+      /* measured at runtime so popovers clear notches/safe areas */
+      --topbar-h: 64px;
     }
 
     body { background: var(--bg-black); overflow: hidden; }
@@ -416,7 +418,18 @@
       .profile-info[data-panel-hidden],
       .profile-media[data-panel-hidden] { display: none; }
       .media-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
-      .settings-panel { left: 12px; right: 12px; top: auto; bottom: 88px; width: auto; }
+      /* Drops from the top bar so the theme switch sits high on screen */
+      .settings-panel {
+        left: 12px; right: 12px; width: auto;
+        top: calc(var(--topbar-h) + 6px);
+        bottom: auto;
+        border-radius: 20px;
+        animation: settingsDrop 180ms cubic-bezier(.25,.1,.25,1) both;
+      }
+      @keyframes settingsDrop {
+        from { opacity: 0; transform: translateY(-12px); }
+        to { opacity: 1; transform: none; }
+      }
     }
 
     @media (max-width: 380px) {
@@ -513,6 +526,17 @@
     return String(value).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
   }
 
+  // Settings hangs off the top bar, which grows with the safe-area inset, so
+  // measure it rather than hard-coding a height. Declared up here because the
+  // contact render below calls it.
+  const topbarEl = document.querySelector('.app-topbar');
+  function syncTopbarHeight() {
+    const h = topbarEl ? Math.round(topbarEl.getBoundingClientRect().height) : 64;
+    if (h > 0) document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+  window.addEventListener('resize', syncTopbarHeight);
+  if (window.ResizeObserver && topbarEl) new ResizeObserver(syncTopbarHeight).observe(topbarEl);
+
   // ── Conversation / contact directory (mirrors chat.html) ──
   const CONVS = [
     { id: 1, name: 'Alex Rivera', initials: 'AR', color: '#7C3AED', online: true,  members: 2, username: '@alexrivera',  phone: '+1 415 555 0132', joined: 'Jan 2023', bio: 'Product designer. Coffee first, pixels second. Always up for a good conversation.' },
@@ -520,7 +544,8 @@
     { id: 3, name: 'Team Alpha',  initials: 'TA', color: '#059669', online: false, members: 8, username: '@team-alpha',  phone: '—',                joined: 'Nov 2022', bio: 'Group chat for the Alpha squad. 8 members. Ship fast, communicate faster.' },
     { id: 4, name: 'Maria Santos', initials: 'MS', color: '#DB2777', online: false, members: 2, username: '@mariasantos', phone: '+351 91 555 0098', joined: 'Feb 2023', bio: 'Photographer & traveller. Sharing the world one frame at a time.' },
     { id: 5, name: 'Dev Chat',    initials: 'DC', color: '#D97706', online: false, members: 5, username: '@dev-chat',    phone: '—',                joined: 'Sep 2022', bio: 'Developers lounge. PRs, hotfixes and the occasional meme.' },
-    { id: 6, name: 'Chris Park',  initials: 'CP', color: '#7C3AED', online: false, members: 2, username: '@chrispark',   phone: '+82 10 5555 0143', joined: 'Jun 2023', bio: 'Backend dev. Thanks for the help earlier!' }
+    { id: 6, name: 'Chris Park',  initials: 'CP', color: '#7C3AED', online: false, members: 2, username: '@chrispark',   phone: '+82 10 5555 0143', joined: 'Jun 2023', bio: 'Backend dev. Thanks for the help earlier!' },
+    { id: 7, name: 'Priya Nair',  initials: 'PN', color: '#0EA5E9', online: true,  members: 2, username: '@priyanair',   phone: '+1 646 555 0118', joined: 'Oct 2023', bio: 'Trail runner and film photographer. Always sending too many photos.' }
   ];
 
   const GRADIENTS = [
@@ -574,9 +599,10 @@
   const conv = CONVS.find(c => c.id === id) || CONVS[0];
   const media = buildMedia(conv.id);
 
-  document.title = `${conv.name} — Profile — ChatApp`;
+  document.title = `${conv.name} — Profile — Gibee`;
   document.getElementById('topbarTitle').innerHTML =
     `${escapeHtml(conv.name)}<span class="app-topbar-sub">${conv.online ? 'Online' : 'Offline'}</span>`;
+  syncTopbarHeight();
 
   // ── Render profile info (left) ────────────────────────────
   const profileInfo = document.getElementById('profileInfo');
