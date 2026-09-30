@@ -319,10 +319,10 @@
     }
     .mobile-switch button.active { background: var(--primary-purple); border-color: var(--primary-purple); color: #fff; }
 
-    /* Settings popover */
+    /* Contact options drop-down, anchored under the three-dot button */
     .settings-panel {
       position: fixed;
-      top: 86px; left: 86px;
+      top: 86px; right: 20px;
       width: 260px;
       z-index: 80;
       display: none;
@@ -330,10 +330,23 @@
       border: 1px solid rgba(196,181,253,.16);
       border-radius: 18px;
       box-shadow: var(--neu-shadow);
-      padding: 14px;
+      padding: 6px;
       animation: pageFade var(--motion-smooth) both;
     }
     .settings-panel.open { display: block; }
+    .menu-item {
+      display: flex; align-items: center; gap: 13px;
+      width: 100%; padding: 10px 11px;
+      border: 0; border-radius: 12px;
+      background: transparent; color: var(--light-purple);
+      font: inherit; font-size: .82rem; font-weight: 600;
+      text-align: left; cursor: pointer;
+      transition: background var(--motion-smooth);
+    }
+    .menu-item svg { flex: 0 0 auto; opacity: .85; }
+    .menu-item:hover, .menu-item:active { background: var(--overlay); }
+    .menu-item.danger { color: var(--error-red); }
+    .menu-sep { height: 1px; margin: 5px 11px; background: rgba(196,181,253,.14); }
     .settings-title { color: var(--soft-light); font-size: .86rem; font-weight: 800; margin-bottom: 12px; }
     .settings-row {
       display: flex; align-items: center; justify-content: space-between;
@@ -357,6 +370,7 @@
     /* Light theme */
     [data-theme="light"] .profile-info,
     [data-theme="light"] .settings-panel { background: var(--bg-surface); border-color: rgba(91,33,182,.14); }
+    [data-theme="light"] .menu-sep { background: rgba(91,33,182,.12); }
     [data-theme="light"] .info-card,
     [data-theme="light"] .media-item { background: var(--bg-surface); border-color: rgba(91,33,182,.14); }
     [data-theme="light"] .m-tab,
@@ -418,9 +432,9 @@
       .profile-info[data-panel-hidden],
       .profile-media[data-panel-hidden] { display: none; }
       .media-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
-      /* Drops from the top bar so the theme switch sits high on screen */
+      /* Drops from the top bar, tucked under the three-dot button */
       .settings-panel {
-        left: 12px; right: 12px; width: auto;
+        left: auto; right: 12px; width: auto; min-width: 236px; max-width: calc(100% - 24px);
         top: calc(var(--topbar-h) + 6px);
         bottom: auto;
         border-radius: 20px;
@@ -458,11 +472,8 @@
       <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
     </button>
     <div class="app-topbar-title" id="topbarTitle">Profile<span class="app-topbar-sub" id="topbarSub">Contact info</span></div>
-    <button class="icon-btn" id="topbarMsgBtn" aria-label="Message">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-    </button>
-    <button class="icon-btn" id="topbarSettingsBtn" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
-      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+    <button class="icon-btn" id="topbarSettingsBtn" aria-label="More options" aria-expanded="false" aria-haspopup="true" aria-controls="profileMenu">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M10 4a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2z" clip-rule="evenodd"/></svg>
     </button>
   </div>
 
@@ -498,17 +509,37 @@
   </nav>
 </div>
 
-<!-- Settings popover -->
-<section class="settings-panel" id="settingsPanel" aria-label="Settings">
-  <div class="settings-title">Settings</div>
-  <label class="settings-row" for="themeSwitch">
-    <span>Light mode</span>
-    <span class="theme-switch">
-      <input type="checkbox" id="themeSwitch"/>
-      <span aria-hidden="true"></span>
-    </span>
-  </label>
-  <button type="button" id="settingsLogoutBtn" style="width:100%;margin-top:14px;height:40px;border-radius:10px;border:1px solid rgba(196,181,253,.18);background:var(--overlay);color:var(--light-purple);font:inherit;font-size:.8rem;font-weight:700;cursor:pointer">Sign out</button>
+<!-- Contact options drop-down (opened from the three-dot top-bar button) -->
+<section class="settings-panel" id="profileMenu" aria-label="Contact options">
+  <button type="button" class="menu-item" data-profile-action="share">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12.9 1.9a1 1 0 011.4 0l3.8 3.8a1 1 0 010 1.4l-1.6 1.6-5.2-5.2 1.6-1.6zM10.6 5.2l4.2 4.2-7.3 7.3H3.3v-4.3l7.3-7.2z"/></svg>
+    <span>Share</span>
+  </button>
+  <button type="button" class="menu-item" data-profile-action="edit">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M13.1 1.9a1.9 1.9 0 012.7 2.7l-.9.9-2.7-2.7.9-.9zM11.4 3.6l2.7 2.7-8 8-3.3.6.6-3.3 8-8z"/></svg>
+    <span>Edit</span>
+  </button>
+  <button type="button" class="menu-item" data-profile-action="mute" id="profileMuteRow">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M10 1.9a5.4 5.4 0 015.4 5.4v2.9l1.3 2.1H8.4l1.2-2.1V7.3A5.4 5.4 0 0110 1.9z"/><path d="M8.3 14.1a1.7 1.7 0 003.4 0z"/><rect x="3.3" y="8.9" width="13.4" height="2.1" rx="1.05" transform="rotate(-45 10 9.95)"/></svg>
+    <span id="profileMuteLabel">Mute notifications</span>
+  </button>
+  <button type="button" class="menu-item" data-profile-action="clear">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.9 1.8h6.2v1.5h3.3v1.9H3.6V3.3h3.3V1.8zM5.3 6.9h9.4l-.7 10.1a1.6 1.6 0 01-1.6 1.5H7.6A1.6 1.6 0 016 17l-.7-10.1z"/></svg>
+    <span>Clear chat</span>
+  </button>
+  <button type="button" class="menu-item" data-profile-action="export">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M9 1.8h2v6.7l2.6-2.6 1.4 1.4-5 5-5-5 1.4-1.4 2.6 2.6V1.8z"/><path d="M3 13.6h2v2.1h10v-2.1h2v3.5a1.7 1.7 0 01-1.7 1.7H4.7A1.7 1.7 0 013 17.1v-3.5z"/></svg>
+    <span>Export chat</span>
+  </button>
+  <div class="menu-sep"></div>
+  <button type="button" class="menu-item" data-profile-action="block">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="7.4"/><rect x="3.4" y="8.9" width="13.2" height="2.2" rx="1.1" transform="rotate(-45 10 10)"/></svg>
+    <span>Block</span>
+  </button>
+  <button type="button" class="menu-item danger" data-profile-action="delete">
+    <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M6.9 1.8h6.2v1.5h3.3v1.9H3.6V3.3h3.3V1.8zM5.3 6.9h9.4l-.7 10.1a1.6 1.6 0 01-1.6 1.5H7.6A1.6 1.6 0 016 17l-.7-10.1z"/></svg>
+    <span>Delete chat</span>
+  </button>
 </section>
 
 <!-- Lightbox -->
@@ -788,7 +819,6 @@
   });
 
   document.getElementById('backBtn').addEventListener('click', () => window.location.href = 'chat.html');
-  document.getElementById('topbarMsgBtn').addEventListener('click', () => window.location.href = 'chat.html');
 
   // ── Mobile Profile / Media switcher ───────────────────────
   const mobileSwitch = document.getElementById('mobileSwitch');
@@ -807,21 +837,21 @@
 
   // ── Bottom navigation ─────────────────────────────────────
   const bottomNav = document.getElementById('bottomNav');
-  const settingsPanel = document.getElementById('settingsPanel');
-  const themeSwitch = document.getElementById('themeSwitch');
+  const profileMenu = document.getElementById('profileMenu');
 
-  function syncThemeSwitch() { if (themeSwitch) themeSwitch.checked = Theme.get() === 'light'; }
-  syncThemeSwitch();
-
-  themeSwitch?.addEventListener('change', () => {
-    Theme.set(themeSwitch.checked ? 'light' : 'dark');
-    syncThemeSwitch();
-  });
+  function closeSettingsPanel() {
+    profileMenu.classList.remove('open');
+    document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', 'false');
+  }
 
   function toggleSettingsPanel() {
-    const isOpen = settingsPanel.classList.toggle('open');
+    const isOpen = profileMenu.classList.toggle('open');
     document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', String(isOpen));
   }
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeSettingsPanel();
+  });
 
   document.getElementById('topbarSettingsBtn').addEventListener('click', event => {
     event.stopPropagation();
@@ -836,25 +866,71 @@
       window.location.href = 'chat.html';
     } else {
       bottomNav.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.nav === 'chats'));
-      settingsPanel.classList.remove('open');
-      document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', 'false');
       const labels = { status: 'Status updates', calls: 'Calls' };
       showToast(`${labels[nav] || nav} — coming soon.`, 'info', 2000);
+      closeSettingsPanel();
     }
   });
 
   document.addEventListener('click', event => {
-    if (!settingsPanel.classList.contains('open')) return;
-    if (settingsPanel.contains(event.target)) return;
+    if (!profileMenu.classList.contains('open')) return;
+    if (profileMenu.contains(event.target)) return;
     if (event.target.closest('#topbarSettingsBtn')) return;
-    settingsPanel.classList.remove('open');
-    document.getElementById('topbarSettingsBtn')?.setAttribute('aria-expanded', 'false');
+    closeSettingsPanel();
   });
 
-  document.getElementById('settingsLogoutBtn').addEventListener('click', () => {
-    Session.clear();
-    localStorage.removeItem('chat_remember');
-    window.location.href = 'index.html';
+  // ── Contact options menu ───────────────────────────────────
+  const muteKey = `chat_muted_${conv.id}`;
+  const muteLabel = document.getElementById('profileMuteLabel');
+
+  function syncMuteLabel() {
+    const muted = localStorage.getItem(muteKey) === '1';
+    if (muteLabel) muteLabel.textContent = muted ? 'Unmute notifications' : 'Mute notifications';
+  }
+  syncMuteLabel();
+
+  async function shareContact() {
+    const card = [
+      'BEGIN:VCARD', 'VERSION:3.0',
+      `FN:${conv.name}`,
+      `N:${conv.name};;;;`,
+      `TEL;TYPE=CELL:${conv.phone || ''}`,
+      `X-SOCIALPROFILE;TYPE=username:${conv.username}`,
+      'END:VCARD'
+    ].filter(l => !l.endsWith(':')).join('\n');
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: conv.name, text: card });
+        showToast(`Shared ${conv.name}'s contact.`, 'success', 2200);
+        return;
+      } catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    try {
+      await navigator.clipboard.writeText(card);
+      showToast(`Contact copied for ${conv.name}.`, 'success', 2200);
+    } catch {
+      showToast('Sharing is coming soon.', 'info', 2200);
+    }
+  }
+
+  profileMenu.addEventListener('click', event => {
+    const item = event.target.closest('[data-profile-action]');
+    if (!item) return;
+    const action = item.dataset.profileAction;
+    if (action === 'share') { shareContact(); return; }
+    if (action === 'mute') {
+      const muted = localStorage.getItem(muteKey) === '1';
+      localStorage.setItem(muteKey, muted ? '0' : '1');
+      syncMuteLabel();
+      showToast(muted ? `Notifications unmuted for ${conv.name}.` : `Notifications muted for ${conv.name}.`, 'success', 2200);
+      return;
+    }
+    closeSettingsPanel();
+    const labels = {
+      edit: 'Edit contact', clear: 'Clear chat', export: 'Export chat',
+      block: 'Block contact', delete: 'Delete chat'
+    };
+    showToast(`${labels[action] || action} — coming soon.`, 'info', 2000);
   });
 
   // ── Initial panel based on URL ────────────────────────────

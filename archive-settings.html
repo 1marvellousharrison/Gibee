@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#000000"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Gibee"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png"/>
+  <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png"/>
+  <title>Archive settings - Gibee</title>
+  <meta name="description" content="Choose how Gibee handles your archived chats."/>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    :root {
+      --motion-smooth: 200ms cubic-bezier(.25,.1,.25,1);
+      /* measured at runtime so anything hanging off the bar clears safe areas */
+      --topbar-h: 64px;
+    }
+
+    .archive-page {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 18px 16px calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .archive-card {
+      max-width: 620px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border: 1px solid rgba(196,181,253,.12);
+      border-radius: 20px;
+      box-shadow: var(--neu-shadow);
+      overflow: hidden;
+    }
+    [data-theme="light"] .archive-card { border-color: rgba(91,33,182,.14); }
+
+    /* One row: copy on the left, checkbox on the right -- same shape WhatsApp
+       uses for "Keep chats archived". */
+    .opt-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 18px;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .opt-row:hover, .opt-row:focus-within { background: rgba(124,58,237,.08); }
+    [data-theme="light"] .opt-row:hover, [data-theme="light"] .opt-row:focus-within { background: rgba(124,58,237,.06); }
+    .opt-copy { flex: 1; min-width: 0; }
+    .opt-title {
+      font-size: 1.02rem;
+      font-weight: 700;
+      color: var(--soft-light);
+      margin-bottom: 5px;
+    }
+    .opt-desc {
+      font-size: .86rem;
+      font-weight: 500;
+      line-height: 1.5;
+      color: rgba(196,181,253,.62);
+    }
+    [data-theme="light"] .opt-desc { color: rgba(91,33,182,.66); }
+
+    /* The checkbox is visually hidden but stays a real, keyboard-operable
+       control; the pill next to it is what you actually see. */
+    .opt-toggle { position: relative; flex-shrink: 0; display: block; width: 52px; height: 30px; }
+    .opt-toggle input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .opt-pill {
+      display: block;
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      background: var(--bg-surface);
+      box-shadow: var(--neu-inset);
+      transition: background var(--transition-med), box-shadow var(--transition-fast);
+      pointer-events: none;
+    }
+    .opt-pill::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-purple), var(--mid-purple));
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+      transition: transform var(--motion-smooth);
+    }
+    .opt-toggle input:checked ~ .opt-pill { background: var(--primary-purple); box-shadow: none; }
+    .opt-toggle input:checked ~ .opt-pill::after { transform: translateX(22px); }
+    .opt-toggle input:focus-visible ~ .opt-pill { box-shadow: var(--neu-inset), 0 0 0 2px rgba(124,58,237,.5); }
+    [data-theme="light"] .opt-pill::after { background: linear-gradient(135deg, #A78BFA, #8B5CF6); }
+
+    .opt-foot {
+      max-width: 620px;
+      margin: 14px auto 0;
+      padding: 0 4px;
+      font-size: .74rem;
+      font-weight: 600;
+      line-height: 1.5;
+      color: rgba(196,181,253,.5);
+    }
+    [data-theme="light"] .opt-foot { color: rgba(91,33,182,.55); }
+
+    @media (max-width: 768px) {
+      .archive-page { padding: 16px 14px calc(24px + env(safe-area-inset-bottom)); }
+      .opt-row { padding: 16px 15px; gap: 14px; }
+      .opt-title { font-size: 1.12rem; }
+      .opt-desc { font-size: .9rem; }
+      .opt-toggle, .opt-pill { width: 56px; height: 34px; }
+      .opt-pill::after { width: 28px; height: 28px; }
+      .opt-toggle input:checked ~ .opt-pill::after { transform: translateX(22px); }
+    }
+
+    /* The shared bar is mobile-only; give the page a heading on wide screens. */
+    .archive-wide-head {
+      display: none;
+      max-width: 620px;
+      margin: 0 auto 14px;
+    }
+    .archive-wide-head h1 {
+      margin: 0 0 4px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--soft-light);
+    }
+    .archive-wide-head p { margin: 0; font-size: .9rem; font-weight: 600; color: rgba(196,181,253,.6); }
+    [data-theme="light"] .archive-wide-head p { color: rgba(91,33,182,.6); }
+    @media (min-width: 769px) {
+      .archive-wide-head { display: block; }
+      .archive-page { padding-top: 40px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-frame">
+
+  <!-- Mobile top bar -->
+  <div class="app-topbar">
+    <button class="icon-btn" id="backBtn" aria-label="Back to archive">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>
+    </button>
+    <div class="app-topbar-title" id="topbarTitle">Archive settings<span class="app-topbar-sub" id="topbarSub">Manage your archive</span></div>
+  </div>
+
+  <main class="archive-page">
+    <div class="archive-wide-head">
+      <h1>Archive settings</h1>
+      <p>Manage your archive</p>
+    </div>
+
+    <div class="archive-card">
+      <label class="opt-row" for="keepArchived">
+        <span class="opt-copy">
+          <span class="opt-title">Keep chats archived</span>
+          <span class="opt-desc">Archived chats will stay archived when you receive a new message or reply to one of these chats.</span>
+        </span>
+        <span class="opt-toggle">
+          <input type="checkbox" id="keepArchived"/>
+          <span class="opt-pill" aria-hidden="true"></span>
+        </span>
+      </label>
+    </div>
+
+    <p class="opt-foot">Archived chats are end-to-end encrypted. Turning this off lets new messages move a chat back to the top of your list.</p>
+  </main>
+
+</div>
+
+<script src="auth.js"></script>
+<script>
+  if (!Session.isLoggedIn()) window.location.href = 'index.html';
+
+  // Same measured-height trick as the other pages, so anything positioned off
+  // the top bar clears notches and safe areas.
+  const topbarEl = document.querySelector('.app-topbar');
+  function syncTopbarHeight() {
+    const h = topbarEl ? Math.round(topbarEl.getBoundingClientRect().height) : 64;
+    if (h > 0) document.documentElement.style.setProperty('--topbar-h', h + 'px');
+  }
+  window.addEventListener('resize', syncTopbarHeight);
+  if (window.ResizeObserver && topbarEl) new ResizeObserver(syncTopbarHeight).observe(topbarEl);
+
+  // Coming from the archive, so prefer history and land back on that screen.
+  document.getElementById('backBtn').addEventListener('click', () => {
+    if (history.length > 1) history.back();
+    else window.location.href = 'chat.html';
+  });
+
+  // The preference is real, so it survives a reload.
+  const PREF_KEY = 'chat_keep_archived';
+  const keepArchived = document.getElementById('keepArchived');
+  try { keepArchived.checked = localStorage.getItem(PREF_KEY) !== '0'; } catch { keepArchived.checked = true; }
+
+  keepArchived.addEventListener('change', () => {
+    const on = keepArchived.checked;
+    try { localStorage.setItem(PREF_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+    showToast(on ? 'New messages will keep chats archived.' : 'New messages will move chats back to the top.', 'info', 2600);
+  });
+</script>
+</body>
+</html>

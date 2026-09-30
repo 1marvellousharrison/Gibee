@@ -450,6 +450,28 @@
     }
     .overflow-meta small { font-size: .72rem; font-weight: 600; color: var(--light-purple); opacity: .75; }
     .overflow-sep { height: 1px; margin: 5px 8px; background: rgba(196,181,253,.14); }
+    /* The call / three-dot menus carry longer labels, so give them more room. */
+    #callMenu, #convMenu { min-width: 250px; }
+    /* "More" opens a nested group rather than a second popover, so it stays
+       clear of the screen edge on a phone. */
+    .overflow-row-more { justify-content: space-between; }
+    .overflow-row-more .ov-lead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .ov-chev {
+      width: 15px; height: 15px; flex-shrink: 0;
+      opacity: .7;
+      transition: transform var(--transition-fast);
+    }
+    .overflow-row-more[aria-expanded="true"] .ov-chev { transform: rotate(180deg); }
+    .overflow-sub {
+      margin: 4px 4px 2px;
+      padding: 2px;
+      border-radius: 13px;
+      background: rgba(124,58,237,.08);
+      border: 1px solid rgba(196,181,253,.12);
+    }
+    .overflow-sub[hidden] { display: none; }
+    .overflow-sub .overflow-row { padding: 9px 10px; font-size: .84rem; }
+    [data-theme="light"] .overflow-sub { background: rgba(124,58,237,.06); border-color: rgba(91,33,182,.1); }
     [data-theme="light"] .overflow-row:hover { background: rgba(124,58,237,.1); }
     [data-theme="light"] .overflow-menu { box-shadow: 0 22px 50px rgba(91,33,182,.18); border-color: rgba(91,33,182,.12); }
     [data-theme="light"] .overflow-sep { background: rgba(91,33,182,.1); }
@@ -1187,6 +1209,10 @@
       }
       .fab-call svg { width: 22px; height: 22px; fill: currentColor; stroke: none; }
       .fab-call:active { transform: scale(.92); }
+      /* Phone + its drop-down arrow read as one control, so they sit tight. */
+      .call-cluster { display: flex; align-items: center; flex-shrink: 0; gap: 2px; }
+      .app-topbar .fab-call-chev { width: 30px; height: 44px; }
+      .app-topbar .fab-call-chev svg { width: 15px; height: 15px; }
 
       /* New chat — floats just above the tab bar, bottom right */
       .fab-new-chat {
@@ -1317,6 +1343,90 @@
       </svg>
       <span>Settings</span>
     </button>
+  </nav>
+
+  <!-- Archive-only menu: the three dots on the archive screen -->
+  <nav class="overflow-menu" id="archiveMenu" aria-label="Archive menu">
+    <button class="overflow-row overflow-item" data-archive-menu="archive-settings">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+        <path fill-rule="evenodd" d="M3 4.5A1.5 1.5 0 014.5 3h2.086a1 1 0 01.951.569l.32.8A1 1 0 008.81 5h6.69a1 1 0 01.853.631l.32.8a1 1 0 00.95.569h2.086A1.5 1.5 0 0119 8.5v8A1.5 1.5 0 0117.5 18h-15A1.5 1.5 0 011 16.5v-8A1.5 1.5 0 012.5 7h2.086a1 1 0 00.95-.569l.32-.8A1 1 0 006.807 3H4.5A1.5 1.5 0 003 4.5zM10 8.25A3.25 3.25 0 1010 14.75 3.25 3.25 0 0010 8.25z" clip-rule="evenodd"/>
+      </svg>
+      <span>Archive settings</span>
+    </button>
+  </nav>
+
+  <!-- Call cluster drop-down: sits under the arrow beside the phone icon -->
+  <nav class="overflow-menu" id="callMenu" aria-label="Call options">
+    <button class="overflow-row overflow-item" data-call="voice">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+      <span>Voice call</span>
+    </button>
+    <button class="overflow-row overflow-item" data-call="video">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12 .7l4-2.5v9.6l-4-2.5V6.7z"/></svg>
+      <span>Video call</span>
+    </button>
+    <div class="overflow-sep"></div>
+    <button class="overflow-row overflow-item" data-call="link">
+      <svg viewBox="0 0 20 20" fill="currentColor"><rect x="2.2" y="7.4" width="8" height="5.2" rx="2.6" transform="rotate(-45 6.2 10)"/><rect x="9.8" y="7.4" width="8" height="5.2" rx="2.6" transform="rotate(-45 13.8 10)"/></svg>
+      <span>Send call link</span>
+    </button>
+  </nav>
+
+  <!-- Conversation three-dot menu, with "More" opening a nested group -->
+  <nav class="overflow-menu" id="convMenu" aria-label="Chat options">
+    <button class="overflow-row overflow-item" data-conv="contact">
+      <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="6.4" r="3.3"/><path d="M3.4 17.4c0-3.4 3-5.5 6.6-5.5s6.6 2.1 6.6 5.5z"/></svg>
+      <span>View contact</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="search">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 102.472 7.143l3.692 3.692 1.414-1.414-3.692-3.692A4 4 0 008 4zm-2 4a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd"/></svg>
+      <span>Search</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="report">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M4.2 2.4h11.2l-2.6 3.5 2.6 3.5H4.2z"/><rect x="4.2" y="9.4" width="1.8" height="8.2" rx=".9"/></svg>
+      <span>Report</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="block">
+      <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="7.4"/><rect x="3.4" y="8.9" width="13.2" height="2.2" rx="1.1" transform="rotate(-45 10 10)"/></svg>
+      <span>Block</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="mute">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.9a5.4 5.4 0 015.4 5.4v2.9l1.3 2.1H8.4l1.2-2.1V7.3A5.4 5.4 0 0110 1.9z"/><path d="M8.3 14.1a1.7 1.7 0 003.4 0z"/><rect x="3.3" y="8.9" width="13.4" height="2.1" rx="1.05" transform="rotate(-45 10 9.95)"/></svg>
+      <span>Mute notification</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="disappearing">
+      <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="11.2" r="6.1"/><rect x="9.1" y="7.4" width="1.8" height="4.4" rx=".9"/><rect x="6.2" y="1.5" width="7.6" height="1.9" rx=".95"/></svg>
+      <span>Disappearing messages</span>
+    </button>
+    <button class="overflow-row overflow-item" data-conv="theme">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2.2a7.8 7.8 0 100 15.6c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h1.3a3.8 3.8 0 003.8-3.8c0-3.5-3.5-6-7.4-6zM6.6 7.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zm2.8-2.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zm3 .2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4z" clip-rule="evenodd"/></svg>
+      <span>Chat theme</span>
+    </button>
+    <button class="overflow-row overflow-item overflow-row-more" id="convMoreBtn" data-conv-more aria-expanded="false" aria-controls="convMoreSub">
+      <span class="ov-lead">
+        <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4.6" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="15.4" cy="10" r="1.7"/></svg>
+        <span>More</span>
+      </span>
+      <svg class="ov-chev" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>
+    </button>
+    <div class="overflow-sub" id="convMoreSub" hidden>
+      <button class="overflow-row overflow-item" data-conv="media">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.6 5.4a2 2 0 012-2h3.1l1.6 2h8.1a2 2 0 012 2v7.2a2 2 0 01-2 2H4.6a2 2 0 01-2-2V5.4z"/></svg>
+        <span>Media, links, docs</span>
+      </button>
+      <button class="overflow-row overflow-item" data-conv="clear">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M6.9 1.8h6.2v1.5h3.3v1.9H3.6V3.3h3.3V1.8zM5.3 6.9h9.4l-.7 10.1a1.6 1.6 0 01-1.6 1.5H7.6A1.6 1.6 0 016 17l-.7-10.1z"/></svg>
+        <span>Clear chat</span>
+      </button>
+      <button class="overflow-row overflow-item" data-conv="export">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 1.8h2v6.7l2.6-2.6 1.4 1.4-5 5-5-5 1.4-1.4 2.6 2.6V1.8z"/><path d="M3 13.6h2v2.1h10v-2.1h2v3.5a1.7 1.7 0 01-1.7 1.7H4.7A1.7 1.7 0 013 17.1v-3.5z"/></svg>
+        <span>Export chat</span>
+      </button>
+      <button class="overflow-row overflow-item" data-conv="shortcut">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 1.8h2v3h3v2h-3v3H9v-3H6v-2h3v-3z"/><rect x="1.8" y="11.2" width="16.4" height="7" rx="2"/></svg>
+        <span>Add shortcut</span>
+      </button>
+    </div>
   </nav>
 
 <div class="chat-shell" id="chatShell">
@@ -1663,6 +1773,8 @@
     if (isMobile()) chatShell.classList.toggle('m-view-chat', view === 'chat');
     closeSettingsPanel();
     closeOverflowMenu();
+    closeArchiveMenu();
+    closeChatMenus();
 
     if (view === 'chat') {
       renderTopbar(convs.find(c => c.id === activeId) || null);
@@ -1694,6 +1806,8 @@
   mobileQuery.addEventListener('change', event => {
     if (!event.matches && isChatOpen()) chatShell.classList.remove('m-view-chat');
     closeOverflowMenu();
+    closeArchiveMenu();
+    closeChatMenus();
   });
 
   window.addEventListener('popstate', event => {
@@ -1711,6 +1825,22 @@
 
   const BACK_ICON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>';
   const CALL_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>';
+  const MORE_ICON = '<svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path fill-rule="evenodd" d="M10 4a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2zm0 6a2 2 0 112 0 2 2 0 01-2 2z" clip-rule="evenodd"/></svg>';
+  const CHEVRON_ICON = '<svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8l4.5 4.5L14.5 8"/></svg>';
+  const VIDEO_ICON = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm12 .7l4-2.5v9.6l-4-2.5V6.7z"/></svg>';
+  const ICON_LINK = '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="2.2" y="7.4" width="8" height="5.2" rx="2.6" transform="rotate(-45 6.2 10)"/><rect x="9.8" y="7.4" width="8" height="5.2" rx="2.6" transform="rotate(-45 13.8 10)"/></svg>';
+  const ICON_CONTACT = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="6.4" r="3.3"/><path d="M3.4 17.4c0-3.4 3-5.5 6.6-5.5s6.6 2.1 6.6 5.5z"/></svg>';
+  const ICON_SEARCH = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 102.472 7.143l3.692 3.692 1.414-1.414-3.692-3.692A4 4 0 008 4zm-2 4a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd"/></svg>';
+  const ICON_REPORT = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M4.2 2.4h11.2l-2.6 3.5 2.6 3.5H4.2z"/><rect x="4.2" y="9.4" width="1.8" height="8.2" rx=".9"/></svg>';
+  const ICON_BLOCK = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="7.4"/><rect x="3.4" y="8.9" width="13.2" height="2.2" rx="1.1" transform="rotate(-45 10 10)"/></svg>';
+  const ICON_MUTE = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.9a5.4 5.4 0 015.4 5.4v2.9l1.3 2.1H8.4l1.2-2.1V7.3A5.4 5.4 0 0110 1.9z"/><path d="M8.3 14.1a1.7 1.7 0 003.4 0z"/><rect x="3.3" y="8.9" width="13.4" height="2.1" rx="1.05" transform="rotate(-45 10 9.95)"/></svg>';
+  const ICON_TIMER = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="11.2" r="6.1"/><rect x="9.1" y="7.4" width="1.8" height="4.4" rx=".9"/><rect x="6.2" y="1.5" width="7.6" height="1.9" rx=".95"/></svg>';
+  const ICON_THEME = '<svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2.2a7.8 7.8 0 100 15.6c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h1.3a3.8 3.8 0 003.8-3.8c0-3.5-3.5-6-7.4-6zM6.6 7.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zm2.8-2.2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4zm3 .2a1.2 1.2 0 110-2.4 1.2 1.2 0 010 2.4z" clip-rule="evenodd"/></svg>';
+  const ICON_MORE = '<svg viewBox="0 0 20 20" fill="currentColor"><circle cx="4.6" cy="10" r="1.7"/><circle cx="10" cy="10" r="1.7"/><circle cx="15.4" cy="10" r="1.7"/></svg>';
+  const ICON_FOLDER = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M2.6 5.4a2 2 0 012-2h3.1l1.6 2h8.1a2 2 0 012 2v7.2a2 2 0 01-2 2H4.6a2 2 0 01-2-2V5.4z"/></svg>';
+  const ICON_TRASH = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M6.9 1.8h6.2v1.5h3.3v1.9H3.6V3.3h3.3V1.8zM5.3 6.9h9.4l-.7 10.1a1.6 1.6 0 01-1.6 1.5H7.6A1.6 1.6 0 016 17l-.7-10.1z"/></svg>';
+  const ICON_DOWNLOAD = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 1.8h2v6.7l2.6-2.6 1.4 1.4-5 5-5-5 1.4-1.4 2.6 2.6V1.8z"/><path d="M3 13.6h2v2.1h10v-2.1h2v3.5a1.7 1.7 0 01-1.7 1.7H4.7A1.7 1.7 0 013 17.1v-3.5z"/></svg>';
+  const ICON_SHORTCUT = '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 1.8h2v3h3v2h-3v3H9v-3H6v-2h3v-3z"/><rect x="1.8" y="11.2" width="16.4" height="7" rx="2"/></svg>';
 
   function userInitials() {
     return (user.name || 'You').trim().split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() || 'U';
@@ -1745,10 +1875,16 @@
             <div class="chat-header-status${conv.online ? '' : ' offline'}">${conv.online ? 'Online' : 'Offline'}</div>
           </div>
         </button>
-        <button class="icon-btn fab-call" id="mobileCallBtn" aria-label="Voice call">${CALL_ICON}</button>`;
+        <div class="call-cluster">
+          <button class="icon-btn fab-call" id="mobileCallBtn" aria-label="Voice call">${CALL_ICON}</button>
+          <button class="icon-btn fab-call-chev" id="mobileCallMenuBtn" aria-label="Call options" aria-expanded="false" aria-controls="callMenu">${CHEVRON_ICON}</button>
+        </div>
+        <button class="icon-btn" id="mobileConvMenuBtn" aria-label="Chat options" aria-expanded="false" aria-controls="convMenu">${MORE_ICON}</button>`;
       document.getElementById('mobileBackBtn')?.addEventListener('click', () => goBack());
       document.getElementById('mobileConvProfile')?.addEventListener('click', () => openProfilePage(conv.id));
       document.getElementById('mobileCallBtn')?.addEventListener('click', () => showToast(`Calling ${conv.name}…`, 'info', 2000));
+      document.getElementById('mobileCallMenuBtn')?.addEventListener('click', () => toggleChatMenu(callMenu, 'mobileCallMenuBtn'));
+      document.getElementById('mobileConvMenuBtn')?.addEventListener('click', () => toggleChatMenu(convMenu, 'mobileConvMenuBtn'));
       document.title = `${conv.name} — Gibee`;
       return;
     }
@@ -1758,8 +1894,10 @@
       const n = archiveCount();
       bar.innerHTML = `
         <button class="icon-btn" id="archiveBackBtn" aria-label="Back to chats">${BACK_ICON}</button>
-        <div class="app-topbar-title" id="mobileTopTitle">Archived<span class="app-topbar-sub">${n} archived ${n === 1 ? 'chat' : 'chats'}</span></div>`;
+        <div class="app-topbar-title" id="mobileTopTitle">Archived<span class="app-topbar-sub">${n} archived ${n === 1 ? 'chat' : 'chats'}</span></div>
+        <button class="icon-btn" id="archiveMoreBtn" aria-label="Archive options" aria-expanded="false" aria-controls="archiveMenu">${MORE_ICON}</button>`;
       document.getElementById('archiveBackBtn')?.addEventListener('click', () => goBack());
+      document.getElementById('archiveMoreBtn')?.addEventListener('click', toggleArchiveMenu);
       document.title = 'Archived — Gibee';
     } else {
       bar.innerHTML = BRAND_HTML;
@@ -1822,8 +1960,131 @@
     closeOverflowMenu();
   });
 
+  // -- Archive three-dot menu -------------------------
+  const archiveMenu = document.getElementById('archiveMenu');
+  const archiveIsOpen = () => !!archiveMenu?.classList.contains('open');
+
+  function openArchiveMenu() {
+    if (!archiveMenu) return;
+    closeOverflowMenu();
+    closeSettingsPanel();
+    archiveMenu.classList.add('open');
+    document.getElementById('archiveMoreBtn')?.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeArchiveMenu() {
+    if (!archiveIsOpen()) return;
+    archiveMenu.classList.remove('open');
+    document.getElementById('archiveMoreBtn')?.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleArchiveMenu() {
+    archiveIsOpen() ? closeArchiveMenu() : openArchiveMenu();
+  }
+
+  archiveMenu?.addEventListener('click', event => {
+    const row = event.target.closest('[data-archive-menu]');
+    if (!row) return;
+    if (row.dataset.archiveMenu === 'archive-settings') {
+      window.location.href = 'archive-settings.html';
+    }
+  });
+
+  document.addEventListener('click', event => {
+    if (!archiveIsOpen()) return;
+    if (archiveMenu.contains(event.target)) return;
+    if (event.target.closest('#archiveMoreBtn')) return;
+    closeArchiveMenu();
+  });
+
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') { closeOverflowMenu(); closeSettingsPanel(); }
+    if (event.key === 'Escape') { closeOverflowMenu(); closeArchiveMenu(); closeChatMenus(); closeSettingsPanel(); }
+  });
+
+  // -- Conversation menus: call cluster + three dots ------------------------
+  const callMenu = document.getElementById('callMenu');
+  const convMenu = document.getElementById('convMenu');
+  const moreSub = document.getElementById('convMoreSub');
+  const moreBtn = document.getElementById('convMoreBtn');
+
+  function collapseMoreSub() {
+    if (!moreSub || !moreBtn) return;
+    moreSub.hidden = true;
+    moreBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function closeChatMenus() {
+    callMenu?.classList.remove('open');
+    convMenu?.classList.remove('open');
+    document.getElementById('mobileCallMenuBtn')?.setAttribute('aria-expanded', 'false');
+    document.getElementById('mobileConvMenuBtn')?.setAttribute('aria-expanded', 'false');
+    collapseMoreSub();
+  }
+
+  function toggleChatMenu(menu, triggerId) {
+    const wasOpen = !!menu?.classList.contains('open');
+    closeChatMenus();
+    if (wasOpen || !menu) return;
+    // Only one popover at a time.
+    closeOverflowMenu();
+    closeArchiveMenu();
+    closeSettingsPanel();
+    menu.classList.add('open');
+    document.getElementById(triggerId)?.setAttribute('aria-expanded', 'true');
+  }
+
+  callMenu?.addEventListener('click', event => {
+    const row = event.target.closest('[data-call]');
+    if (!row) return;
+    closeChatMenus();
+    const conv = convs.find(c => c.id === activeId);
+    const name = conv?.name || 'this chat';
+    const messages = {
+      voice: `Calling ${name}…`,
+      video: `Starting video call with ${name}…`,
+      link: `Call link copied for ${name}.`
+    };
+    showToast(messages[row.dataset.call] || 'Coming soon.', 'info', 2200);
+  });
+
+  convMenu?.addEventListener('click', event => {
+    // "More" only expands the nested group.
+    if (event.target.closest('[data-conv-more]')) {
+      const expanding = moreSub.hidden;
+      moreSub.hidden = !expanding;
+      moreBtn?.setAttribute('aria-expanded', String(expanding));
+      return;
+    }
+    const row = event.target.closest('[data-conv]');
+    if (!row) return;
+    const conv = convs.find(c => c.id === activeId);
+    if (row.dataset.conv === 'contact') {
+      closeChatMenus();
+      openProfilePage(conv?.id);
+      return;
+    }
+    closeChatMenus();
+    const name = conv?.name || 'this chat';
+    const messages = {
+      search: 'Search in this chat - coming soon.',
+      report: `Reporting ${name} - coming soon.`,
+      block: `Blocking ${name} - coming soon.`,
+      mute: 'Mute notification - coming soon.',
+      disappearing: 'Disappearing messages - coming soon.',
+      theme: 'Chat theme - coming soon.',
+      media: 'Media, links and docs - coming soon.',
+      clear: 'Clear chat - coming soon.',
+      export: 'Export chat - coming soon.',
+      shortcut: 'Add shortcut - coming soon.'
+    };
+    showToast(messages[row.dataset.conv] || 'Coming soon.', 'info', 2200);
+  });
+
+  document.addEventListener('click', event => {
+    if (!callMenu?.classList.contains('open') && !convMenu?.classList.contains('open')) return;
+    if (callMenu?.contains(event.target) || convMenu?.contains(event.target)) return;
+    if (event.target.closest('#mobileCallMenuBtn') || event.target.closest('#mobileConvMenuBtn')) return;
+    closeChatMenus();
   });
 
   function openProfilePage(id, tab) {
